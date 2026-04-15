@@ -14,6 +14,25 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Staggered hero fade-in on load */
+@keyframes heroFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  opacity: 0;
+  animation: heroFadeIn 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.fade-1 { animation-delay: 0.05s; }
+.fade-2 { animation-delay: 0.20s; }
+.fade-3 { animation-delay: 0.45s; }
+.fade-4 { animation-delay: 0.70s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in { animation: none; opacity: 1; }
+}
+
 /* Hamburger menu animation */
 .hamburger-line {
   transition: all 0.3s ease;
@@ -41,9 +60,9 @@ body {
   .nav-desktop { display: none !important; }
   .nav-mobile { display: flex !important; }
 
-  /* Hero - top padding clears the fixed nav (64px) */
-  .hero-section { padding: 120px 20px 72px !important; }
-  .hero-title { font-size: 40px !important; letter-spacing: -1px !important; line-height: 1.1 !important; }
+  /* Hero - full viewport on mobile too, so stats stay below fold */
+  .hero-section { padding: 80px 20px !important; }
+  .hero-title { font-size: 44px !important; letter-spacing: -1px !important; line-height: 1.05 !important; }
   .hero-subtitle { font-size: 16px !important; margin-bottom: 32px !important; }
   .hero-cta-group { flex-direction: column !important; width: 100% !important; }
   .hero-cta-group > a { width: 100% !important; text-align: center !important; box-sizing: border-box !important; }

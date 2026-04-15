@@ -133,9 +133,27 @@ function Nav() {
 
 function Hero() {
   return (
-    <section className="hero-section" style={{ textAlign: 'center', padding: '120px 32px 120px' }}>
-      <div style={{ maxWidth: 760, margin: '0 auto' }}>
-        <div style={{
+    <section className="hero-section" style={{
+      textAlign: 'center',
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '64px 32px',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      {/* Ambient glow behind hero */}
+      <div aria-hidden="true" style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 900, height: 900,
+        background: 'radial-gradient(circle, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.05) 35%, transparent 70%)',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} />
+      <div style={{ maxWidth: 780, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+        <div className="fade-in fade-1" style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           fontSize: 13, fontWeight: 500, color: '#818cf8',
           background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)',
@@ -143,17 +161,17 @@ function Hero() {
         }}>
           EU AI Act enforcement begins August 2, 2026
         </div>
-        <h1 className="hero-title" style={{
-          fontSize: 64, fontWeight: 700, color: '#fff',
-          letterSpacing: '-2px', lineHeight: 1.05, marginBottom: 24,
+        <h1 className="hero-title fade-in fade-2" style={{
+          fontSize: 72, fontWeight: 700, color: '#fff',
+          letterSpacing: '-2.5px', lineHeight: 1.02, marginBottom: 28,
         }}>
           You built the AI.<br />
           <span style={{ color: '#818cf8' }}>We prove it behaved.</span>
         </h1>
-        <p className="hero-subtitle" style={{ fontSize: 20, color: '#94a3b8', lineHeight: 1.7, marginBottom: 44, maxWidth: 560, margin: '0 auto 44px' }}>
+        <p className="hero-subtitle fade-in fade-3" style={{ fontSize: 20, color: '#94a3b8', lineHeight: 1.7, marginBottom: 44, maxWidth: 560, margin: '0 auto 44px' }}>
           Drop-in integration that logs every AI inference as an immutable, tamper-evident legal record - ready for EU AI Act compliance.
         </p>
-        <div className="hero-cta-group" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div className="hero-cta-group fade-in fade-4" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
           <a href={DASHBOARD_URL} style={{
             padding: '14px 28px', background: '#4f46e5', color: '#fff',
             fontWeight: 600, fontSize: 15, borderRadius: 12, textDecoration: 'none',
