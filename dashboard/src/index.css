@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0f1117;
+  color: #e2e8f0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Full-width dashboard layout */
+.dashboard-main {
+  max-width: 100%;
+}
+
+button {
+    margin: 0;
+}
+
+input, select, textarea {
+    margin-bottom: 10px;
+}
+
+/* ─── Light mode ──────────────────────────────────────────────────────────── */
+/* Page background: #f8fafc, surfaces: #ffffff, elevated: #f1f5f9 */
+html.light body        { background: #f8fafc; color: #0f172a; }
+html.light header      { background: #ffffff; border-color: #e2e8f0; }
+html.light main        { background: #f8fafc; }
+
+/* Surfaces - dark bg → light equivalents */
+html.light .bg-\[\#0f1117\]   { background: #ffffff !important; }
+html.light .bg-\[\#1a1d27\]   { background: #f1f5f9 !important; }
+html.light .bg-slate-800     { background: #f1f5f9 !important; }
+html.light .bg-slate-800\/20 { background: rgba(241,245,249,0.4) !important; }
+html.light .bg-slate-800\/30 { background: rgba(241,245,249,0.5) !important; }
+html.light .bg-slate-800\/40 { background: rgba(241,245,249,0.6) !important; }
+html.light .bg-slate-800\/60 { background: rgba(241,245,249,0.8) !important; }
+html.light .bg-slate-900     { background: #ffffff !important; }
+html.light .bg-slate-900\/60 { background: rgba(255,255,255,0.9) !important; }
+html.light .bg-slate-700     { background: #e2e8f0 !important; }
+
+/* Borders */
+html.light .border-slate-800      { border-color: #e2e8f0 !important; }
+html.light .border-slate-800\/50  { border-color: rgba(226,232,240,0.6) !important; }
+html.light .border-slate-700      { border-color: #e2e8f0 !important; }
+html.light .border-slate-700\/40  { border-color: rgba(226,232,240,0.5) !important; }
+html.light .border-slate-700\/50  { border-color: rgba(226,232,240,0.6) !important; }
+html.light .border-slate-600      { border-color: #cbd5e1 !important; }
+html.light .divide-slate-800 > *  { border-color: #e2e8f0 !important; }
+
+/* Text */
+html.light .text-white     { color: #0f172a !important; }
+html.light .text-slate-300 { color: #334155 !important; }
+html.light .text-slate-400 { color: #64748b !important; }
+html.light .text-slate-500 { color: #94a3b8 !important; }
+html.light .text-slate-600 { color: #94a3b8 !important; }
+
+/* Accent text - keep colored text visible */
+html.light .text-emerald-400 { color: #059669 !important; }
+html.light .text-emerald-500 { color: #047857 !important; }
+html.light .text-red-400     { color: #dc2626 !important; }
+html.light .text-indigo-400  { color: #4f46e5 !important; }
+
+/* Table */
+html.light table thead tr { background: #f1f5f9 !important; }
+html.light table thead th { color: #475569 !important; font-weight: 600 !important; }
+html.light table tbody tr { background: #ffffff; }
+html.light table tbody tr:hover { background: #f8fafc !important; }
+html.light .hover\:bg-slate-800\/30:hover { background: #f8fafc !important; }
+
+/* Inputs */
+html.light input, html.light select, html.light textarea {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+html.light input::placeholder, html.light textarea::placeholder { color: #94a3b8 !important; }
+
+/* Active tab indicator */
+html.light .bg-indigo-500 { background: #4f46e5 !important; }
+
+/* Buttons */
+html.light .bg-indigo-600               { background: #4f46e5 !important; color: #ffffff !important; }
+html.light .hover\:bg-indigo-500:hover  { background: #4338ca !important; }
+
+/* Billing/status banners */
+html.light .billing-banner { background: #f1f5f9 !important; border-color: #e2e8f0 !important; }
+
+/* Disabled buttons */
+html.light .disabled\:bg-slate-700:disabled { background: #e2e8f0 !important; }
+html.light .disabled\:text-slate-500:disabled { color: #94a3b8 !important; }
+

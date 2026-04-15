@@ -1,0 +1,20 @@
+Privacy Policy
+Last updated: April 11, 2026
+
+1. Information we collect
+Account email address. Billing information (processed by Stripe - we do not store card data). AI inference metadata: model name, provider, latency, status code, timestamp, and SHA-256 hashes of inputs/outputs.
+
+2. Information we do not collect
+Raw AI inputs and/or outputs are never stored. We cannot reconstruct what was sent to and/or received from any AI provider.
+
+3. Legal basis (GDPR)
+We process your data to perform the Terms of Service agreement you have with us (Art. 6(1)(b) GDPR) and to comply with financial record-keeping obligations (Art. 6(1)(c) GDPR).
+
+4. Data residency
+All data is stored in the EU, namely AWS eu-central-1 (Frankfurt, Germany) via Supabase. This applies to all plans.
+
+5. Retention
+Inference logs are append-only and retained indefinitely by design - this is core to the compliance value of the service. Account data is deleted upon request.
+
+6. Your rights
+EU residents have the right to access, rectify, and erase personal data. Contact support@ailedger.dev to exercise these rights. Note: inference log hashes cannot be deleted as they contain no personal data.
