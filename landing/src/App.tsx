@@ -718,18 +718,18 @@ function Docs() {
   )
 
   const c = {
-    comment: '#475569',
+    comment: '#64748b',
     name: '#93c5fd',
     fn: '#fcd34d',
     str: '#86efac',
-    plain: '#0f172a',
+    plain: '#e2e8f0',
     kw: '#c084fc',
   }
 
   const s = (color: string, text: string) => <span style={{ color }}>{text}</span>
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0f172a', color: '#0f172a', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#ffffff', color: '#0f172a', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <Nav />
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '100px 32px 80px', display: 'flex', gap: 64 }}>
@@ -1071,7 +1071,7 @@ function Legal() {
   ]
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0f172a', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#ffffff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '80px 32px' }}>
         <a href="/" style={{ color: '#475569', fontSize: 14, textDecoration: 'none', display: 'inline-block', marginBottom: 48 }}>← Back</a>
         <h1 style={{ fontSize: 36, fontWeight: 700, color: '#0f172a', letterSpacing: '-0.5px', marginBottom: 8 }}>Legal</h1>
@@ -1099,7 +1099,7 @@ function Legal() {
 
 function Contact() {
   return (
-    <div style={{ minHeight: '100vh', background: '#0f172a', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#ffffff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '80px 32px' }}>
         <a href="/" style={{ color: '#475569', fontSize: 14, textDecoration: 'none', display: 'inline-block', marginBottom: 48 }}>- Back</a>
         <h1 style={{ fontSize: 36, fontWeight: 700, color: '#0f172a', letterSpacing: '-0.5px', marginBottom: 8 }}>Contact</h1>
@@ -1176,7 +1176,7 @@ function AnnexIIIGuide() {
   ]
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0f172a', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#ffffff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <Nav />
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '100px 32px 80px' }}>
         <a href="/docs" style={{ color: '#475569', fontSize: 14, textDecoration: 'none', display: 'inline-block', marginBottom: 48 }}>← Back to docs</a>

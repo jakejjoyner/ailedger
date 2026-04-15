@@ -92,10 +92,13 @@ const [checkoutBanner, setCheckoutBanner] = useState<string | null>(() => {
 
   if (!session) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-12 px-4" style={{ background: theme === 'light' ? '#f8fafc' : '#0f1117' }}>
-        <div className="w-full max-w-sm p-8 rounded-xl border" style={{
+      <div className="min-h-screen flex items-center justify-center py-12 px-4" style={{
+        background: theme === 'light' ? '#ffffff' : '#0f1117',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      }}>
+        <div className="w-full max-w-sm p-8 rounded-2xl border" style={{
           background: theme === 'light' ? '#ffffff' : '#1a1d27',
-          borderColor: theme === 'light' ? '#e2e8f0' : '#1e293b',
+          borderColor: theme === 'light' ? 'rgba(15,23,42,0.1)' : '#1e293b',
         }}>
           <div className="mb-8 text-center">
             <h1 style={{ color: theme === 'light' ? '#0f172a' : '#ffffff', fontSize: 22, fontWeight: 600, letterSpacing: '-0.3px' }}>AILedger</h1>
@@ -103,13 +106,40 @@ const [checkoutBanner, setCheckoutBanner] = useState<string | null>(() => {
           </div>
           <Auth
             supabaseClient={supabase}
-            appearance={{ theme: ThemeSupa }}
-            theme={theme}
+            appearance={{
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: '#4f46e5',
+                    brandAccent: '#4338ca',
+                    brandButtonText: '#ffffff',
+                    inputBackground: theme === 'light' ? '#ffffff' : '#0f1117',
+                    inputBorder: theme === 'light' ? 'rgba(15,23,42,0.12)' : '#1e293b',
+                    inputBorderHover: '#4f46e5',
+                    inputBorderFocus: '#4f46e5',
+                    inputText: theme === 'light' ? '#0f172a' : '#e2e8f0',
+                    inputLabelText: theme === 'light' ? '#475569' : '#94a3b8',
+                    inputPlaceholder: theme === 'light' ? '#94a3b8' : '#475569',
+                    messageText: theme === 'light' ? '#475569' : '#94a3b8',
+                    messageTextDanger: '#dc2626',
+                    anchorTextColor: theme === 'light' ? '#4f46e5' : '#818cf8',
+                    anchorTextHoverColor: '#4338ca',
+                    defaultButtonBackground: theme === 'light' ? '#ffffff' : '#1a1d27',
+                    defaultButtonBackgroundHover: theme === 'light' ? '#f8fafc' : '#252933',
+                    defaultButtonBorder: theme === 'light' ? 'rgba(15,23,42,0.12)' : '#1e293b',
+                    defaultButtonText: theme === 'light' ? '#0f172a' : '#e2e8f0',
+                    dividerBackground: theme === 'light' ? 'rgba(15,23,42,0.08)' : '#1e293b',
+                  },
+                },
+              },
+            }}
+            theme={theme === 'dark' ? 'dark' : 'default'}
             providers={['google', 'github']}
             redirectTo="https://dash.ailedger.dev/reset-password"
             view={new URLSearchParams(window.location.search).get('view') === 'sign-up' ? 'sign_up' : 'sign_in'}
           />
-          <p style={{ color: '#64748b', fontSize: 11, marginTop: 16, textAlign: 'center', lineHeight: 1.5 }}>
+          <p style={{ color: theme === 'light' ? '#64748b' : '#64748b', fontSize: 11, marginTop: 16, textAlign: 'center', lineHeight: 1.5 }}>
             If you don't see a verification email, check your spam folder.
           </p>
         </div>
