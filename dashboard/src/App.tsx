@@ -92,16 +92,19 @@ const [checkoutBanner, setCheckoutBanner] = useState<string | null>(() => {
 
   if (!session) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-12 px-4" style={{ background: '#0f1117' }}>
-        <div className="w-full max-w-sm p-8 bg-[#1a1d27] rounded-xl border border-slate-800">
+      <div className="min-h-screen flex items-center justify-center py-12 px-4" style={{ background: theme === 'light' ? '#f8fafc' : '#0f1117' }}>
+        <div className="w-full max-w-sm p-8 rounded-xl border" style={{
+          background: theme === 'light' ? '#ffffff' : '#1a1d27',
+          borderColor: theme === 'light' ? '#e2e8f0' : '#1e293b',
+        }}>
           <div className="mb-8 text-center">
-            <h1 style={{ color: '#ffffff', fontSize: 22, fontWeight: 600, letterSpacing: '-0.3px' }}>AILedger</h1>
-            <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 4 }}>AI audit infrastructure</p>
+            <h1 style={{ color: theme === 'light' ? '#0f172a' : '#ffffff', fontSize: 22, fontWeight: 600, letterSpacing: '-0.3px' }}>AILedger</h1>
+            <p style={{ color: theme === 'light' ? '#475569' : '#94a3b8', fontSize: 13, marginTop: 4 }}>AI audit infrastructure</p>
           </div>
           <Auth
             supabaseClient={supabase}
             appearance={{ theme: ThemeSupa }}
-            theme="dark"
+            theme={theme}
             providers={['google', 'github']}
             redirectTo="https://dash.ailedger.dev/reset-password"
             view={new URLSearchParams(window.location.search).get('view') === 'sign-up' ? 'sign_up' : 'sign_in'}
