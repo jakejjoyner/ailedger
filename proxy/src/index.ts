@@ -8,7 +8,7 @@
  *   OPENAI_BASE_URL=https://ailedger.dev/proxy/openai
  *
  * Authentication: pass API key in x-ailedger-key header
- *   x-ailedger-key: agl_sk_xxxx...
+ *   x-ailedger-key: alg_sk_xxxx...
  */
 
 export interface Env {

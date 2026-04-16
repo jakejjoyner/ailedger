@@ -396,7 +396,7 @@ function CodeSnippet() {
     <section className="section-pad" style={{ padding: '100px 32px' }}>
       <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
         <h2 className="section-title" style={{ fontSize: 40, fontWeight: 700, color: '#fff', letterSpacing: '-1px', marginBottom: 16 }}>Integration in 60 seconds</h2>
-        <p style={{ fontSize: 17, color: '#64748b', marginBottom: 44 }}>Works with OpenAI, Anthropic, Gemini, and any OpenAI-compatible API.</p>
+        <p style={{ fontSize: 17, color: '#64748b', marginBottom: 44 }}>Works with OpenAI, Anthropic, and Gemini.</p>
         <div style={{
           textAlign: 'left', borderRadius: 16,
           border: '1px solid rgba(255,255,255,0.1)',
@@ -432,7 +432,7 @@ function CodeSnippet() {
               <span style={{ color: '#e2e8f0' }}>{'{'}  </span>
               <span style={{ color: '#86efac' }}>"x-ailedger-key"</span>
               <span style={{ color: '#e2e8f0' }}>: </span>
-              <span style={{ color: '#86efac' }}>"agl_sk_..."</span>
+              <span style={{ color: '#86efac' }}>"alg_sk_..."</span>
               <span style={{ color: '#e2e8f0' }}> {'}'}{'\n)' }</span>
             </code>
           </pre>
@@ -584,7 +584,7 @@ function FAQ() {
     },
     {
       q: 'How long does integration take?',
-      a: 'For OpenAI, Anthropic, Gemini, or any OpenAI-compatible API, integration means pointing your client at our proxy and adding our API key as a header. Most teams are logging within 60 seconds of creating an account.',
+      a: 'For OpenAI, Anthropic, and Gemini, integration means pointing your client at our proxy and adding our API key as a header. Most teams are logging within 60 seconds of creating an account.',
     },
     {
       q: 'Does AILedger add latency to my AI calls?',
@@ -592,7 +592,7 @@ function FAQ() {
     },
     {
       q: 'Which AI providers are supported?',
-      a: 'OpenAI, Anthropic, and Google Gemini are natively supported. Any API that follows the OpenAI-compatible format also works without any additional configuration.',
+      a: 'OpenAI, Anthropic, and Google Gemini are natively supported. Additional providers (AWS Bedrock, Azure OpenAI, Cohere, Mistral) are on the roadmap — file a GitHub issue if you need one.',
     },
     {
       q: 'Is AILedger sufficient for EU AI Act compliance on its own?',
@@ -735,6 +735,28 @@ function Docs() {
     <CodeBlock filename={filename} raw={raw}>{children}</CodeBlock>
   )
 
+  const plainBlock = (filename: string, raw: string) => (
+    <CodeBlock filename={filename} raw={raw}>
+      <span style={{ color: '#e2e8f0' }}>{raw}</span>
+    </CodeBlock>
+  )
+
+  const featureList = (items: { label: string; status: '✓' | '⚠' | '✗'; note?: string }[]) => (
+    <ul style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.9, paddingLeft: 20, margin: '12px 0 0' }}>
+      {items.map((it) => (
+        <li key={it.label}>
+          <span style={{ color: it.status === '✓' ? '#86efac' : it.status === '⚠' ? '#fcd34d' : '#f87171', marginRight: 8 }}>{it.status}</span>
+          <span style={{ color: '#e2e8f0' }}>{it.label}</span>
+          {it.note && <span style={{ color: '#64748b' }}> — {it.note}</span>}
+        </li>
+      ))}
+    </ul>
+  )
+
+  const stepLabel = (text: string) => (
+    <p style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8', marginTop: 24, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{text}</p>
+  )
+
   const c = {
     comment: '#475569',
     name: '#93c5fd',
@@ -790,7 +812,14 @@ function Docs() {
           {/* OpenAI */}
           <section id="openai" style={{ scrollMarginTop: '96px', marginBottom: 64 }}>
             <h2 style={{ fontSize: 22, fontWeight: 600, color: '#fff', marginBottom: 8 }}>OpenAI</h2>
-            <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.8, marginBottom: 4 }}>Install: <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>pip install openai</code></p>
+            <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.8, marginBottom: 4 }}>Install: <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>pip install openai</code> · <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>npm install openai</code></p>
+            {stepLabel('One-liner change')}
+            {plainBlock('diff',
+`- base_url: https://api.openai.com/v1
++ base_url: ${PROXY_URL}/proxy/openai
++ header:   x-ailedger-key: alg_sk_...`
+            )}
+            {stepLabel('Python')}
             {codeBlock('openai_example.py', `from openai import OpenAI\n\nclient = OpenAI(\n  api_key="your-openai-key",\n  base_url="${PROXY_URL}/proxy/openai",\n  default_headers={"x-ailedger-key": "alg_sk_..."}\n)\n\ncompletion = client.chat.completions.create(\n  model="gpt-4.1-mini",\n  messages=[{"role": "user", "content": "Hello!"}]\n)\nprint(completion.choices[0].message.content)\n`, <>
               {s(c.kw, 'from')}{s(c.plain, ' openai ')}{s(c.kw, 'import')}{s(c.plain, ' OpenAI\n\n')}
               {s(c.name, 'client')}{s(c.plain, ' = ')}{s(c.fn, 'OpenAI')}{s(c.plain, '(\n')}
@@ -802,12 +831,53 @@ function Docs() {
               {s(c.plain, '  messages=[{')}{s(c.str, '"role"')}{s(c.plain, ': ')}{s(c.str, '"user"')}{s(c.plain, ', ')}{s(c.str, '"content"')}{s(c.plain, ': ')}{s(c.str, '"Hello!"')}{s(c.plain, '}]\n)\n')}
               {s(c.fn, 'print')}{s(c.plain, '(completion.choices[')}{s(c.str, '0')}{s(c.plain, '].message.content)\n')}
             </>)}
+            {stepLabel('Node')}
+            {plainBlock('openai_example.js',
+`import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: "your-openai-key",
+  baseURL: "${PROXY_URL}/proxy/openai",
+  defaultHeaders: { "x-ailedger-key": "alg_sk_..." },
+});
+
+const completion = await client.chat.completions.create({
+  model: "gpt-4.1-mini",
+  messages: [{ role: "user", content: "Hello!" }],
+});
+console.log(completion.choices[0].message.content);`
+            )}
+            {stepLabel('Capabilities')}
+            {featureList([
+              { label: 'Chat completions', status: '✓' },
+              { label: 'Function / tool calling', status: '✓', note: 'body forwarded as-is' },
+              { label: 'Vision (image inputs)', status: '✓', note: 'body forwarded as-is' },
+              { label: 'Streaming (SSE)', status: '⚠', note: 'response is buffered by the proxy so the audit hash can be computed; the final payload is identical, but token-by-token UX is lost' },
+              { label: 'Responses / embeddings / audio', status: '✓', note: 'any /v1/* path passes through' },
+            ])}
+            {stepLabel('Verify logging')}
+            {plainBlock('verify_openai.sh',
+`curl -s ${PROXY_URL}/proxy/openai/v1/chat/completions \\
+  -H "Authorization: Bearer $OPENAI_KEY" \\
+  -H "x-ailedger-key: $AILEDGER_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"gpt-4.1-mini","messages":[{"role":"user","content":"Say: ok"}]}'
+
+# Then refresh dash.ailedger.dev/logs — the record appears within ~1s.`
+            )}
           </section>
 
           {/* Anthropic */}
           <section id="anthropic" style={{ scrollMarginTop: '96px', marginBottom: 64 }}>
             <h2 style={{ fontSize: 22, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Anthropic</h2>
-            <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.8, marginBottom: 4 }}>Install: <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>pip install anthropic</code></p>
+            <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.8, marginBottom: 4 }}>Install: <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>pip install anthropic</code> · <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>npm install @anthropic-ai/sdk</code></p>
+            {stepLabel('One-liner change')}
+            {plainBlock('diff',
+`- base_url: https://api.anthropic.com
++ base_url: ${PROXY_URL}/proxy/anthropic
++ header:   x-ailedger-key: alg_sk_...`
+            )}
+            {stepLabel('Python')}
             {codeBlock('anthropic_example.py', `from anthropic import Anthropic\n\nclient = Anthropic(\n  api_key="your-anthropic-key",\n  base_url="${PROXY_URL}/proxy/anthropic",\n  default_headers={"x-ailedger-key": "alg_sk_..."}\n)\n\nmessage = client.messages.create(\n  model="claude-opus-4-6",\n  max_tokens=1024,\n  messages=[{"role": "user", "content": "Hello, Claude"}]\n)\nprint(message.content)\n`, <>
               {s(c.kw, 'from')}{s(c.plain, ' anthropic ')}{s(c.kw, 'import')}{s(c.plain, ' Anthropic\n\n')}
               {s(c.name, 'client')}{s(c.plain, ' = ')}{s(c.fn, 'Anthropic')}{s(c.plain, '(\n')}
@@ -820,12 +890,55 @@ function Docs() {
               {s(c.plain, '  messages=[{')}{s(c.str, '"role"')}{s(c.plain, ': ')}{s(c.str, '"user"')}{s(c.plain, ', ')}{s(c.str, '"content"')}{s(c.plain, ': ')}{s(c.str, '"Hello, Claude"')}{s(c.plain, '}]\n)\n')}
               {s(c.fn, 'print')}{s(c.plain, '(message.content)\n')}
             </>)}
+            {stepLabel('Node')}
+            {plainBlock('anthropic_example.js',
+`import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  apiKey: "your-anthropic-key",
+  baseURL: "${PROXY_URL}/proxy/anthropic",
+  defaultHeaders: { "x-ailedger-key": "alg_sk_..." },
+});
+
+const message = await client.messages.create({
+  model: "claude-opus-4-6",
+  max_tokens: 1024,
+  messages: [{ role: "user", content: "Hello, Claude" }],
+});
+console.log(message.content);`
+            )}
+            {stepLabel('Capabilities')}
+            {featureList([
+              { label: 'Messages API', status: '✓' },
+              { label: 'Tool use', status: '✓', note: 'body forwarded as-is' },
+              { label: 'Vision (image inputs)', status: '✓', note: 'body forwarded as-is' },
+              { label: 'Streaming (SSE)', status: '⚠', note: 'response is buffered by the proxy so the audit hash can be computed; the final payload is identical, but token-by-token UX is lost' },
+              { label: 'Extended thinking / PDF / file APIs', status: '✓', note: 'any /v1/* path passes through' },
+            ])}
+            {stepLabel('Verify logging')}
+            {plainBlock('verify_anthropic.sh',
+`curl -s ${PROXY_URL}/proxy/anthropic/v1/messages \\
+  -H "x-api-key: $ANTHROPIC_KEY" \\
+  -H "anthropic-version: 2023-06-01" \\
+  -H "x-ailedger-key: $AILEDGER_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"claude-opus-4-6","max_tokens":16,"messages":[{"role":"user","content":"Say: ok"}]}'
+
+# Then refresh dash.ailedger.dev/logs — the record appears within ~1s.`
+            )}
           </section>
 
           {/* Gemini */}
           <section id="gemini" style={{ scrollMarginTop: '96px', marginBottom: 64 }}>
             <h2 style={{ fontSize: 22, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Gemini</h2>
-            <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.8, marginBottom: 4 }}>Install: <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>pip install google-genai</code></p>
+            <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.8, marginBottom: 4 }}>Install: <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>pip install google-genai</code> · <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>npm install @google/genai</code></p>
+            {stepLabel('One-liner change')}
+            {plainBlock('diff',
+`- base_url: https://generativelanguage.googleapis.com
++ base_url: ${PROXY_URL}/proxy/gemini
++ header:   x-ailedger-key: alg_sk_...`
+            )}
+            {stepLabel('Python')}
             {codeBlock('gemini_example.py', `from google import genai\n\nclient = genai.Client(\n  api_key="your-gemini-key",\n  http_options={\n    "base_url": "${PROXY_URL}/proxy/gemini",\n    "headers": {"x-ailedger-key": "alg_sk_..."},\n  }\n)\n\nresponse = client.models.generate_content(\n  model="gemini-2.5-flash",\n  contents="Explain how AI works in a few words"\n)\nprint(response.text)\n`, <>
               {s(c.kw, 'from')}{s(c.plain, ' google ')}{s(c.kw, 'import')}{s(c.plain, ' genai\n\n')}
               {s(c.name, 'client')}{s(c.plain, ' = genai.')}{s(c.fn, 'Client')}{s(c.plain, '(\n')}
@@ -839,6 +952,41 @@ function Docs() {
               {s(c.plain, '  contents=')}{s(c.str, '"Explain how AI works in a few words"')}{s(c.plain, '\n)\n')}
               {s(c.fn, 'print')}{s(c.plain, '(response.text)\n')}
             </>)}
+            {stepLabel('Node')}
+            {plainBlock('gemini_example.js',
+`import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({
+  apiKey: "your-gemini-key",
+  httpOptions: {
+    baseUrl: "${PROXY_URL}/proxy/gemini",
+    headers: { "x-ailedger-key": "alg_sk_..." },
+  },
+});
+
+const response = await ai.models.generateContent({
+  model: "gemini-2.5-flash",
+  contents: "Explain how AI works in a few words",
+});
+console.log(response.text);`
+            )}
+            {stepLabel('Capabilities')}
+            {featureList([
+              { label: 'generateContent', status: '✓' },
+              { label: 'Function calling', status: '✓', note: 'body forwarded as-is' },
+              { label: 'Vision (image / video / audio inputs)', status: '✓', note: 'body forwarded as-is' },
+              { label: 'Streaming (streamGenerateContent)', status: '⚠', note: 'response is buffered by the proxy so the audit hash can be computed; the final payload is identical, but token-by-token UX is lost' },
+              { label: 'Embeddings / count-tokens / files', status: '✓', note: 'any /v1beta/* path passes through' },
+            ])}
+            {stepLabel('Verify logging')}
+            {plainBlock('verify_gemini.sh',
+`curl -s "${PROXY_URL}/proxy/gemini/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_KEY" \\
+  -H "x-ailedger-key: $AILEDGER_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"contents":[{"parts":[{"text":"Say: ok"}]}]}'
+
+# Then refresh dash.ailedger.dev/logs — the record appears within ~1s.`
+            )}
           </section>
 
           {/* Test your keys */}
