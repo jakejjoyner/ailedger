@@ -396,7 +396,7 @@ function CodeSnippet() {
     <section className="section-pad" style={{ padding: '100px 32px' }}>
       <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
         <h2 className="section-title" style={{ fontSize: 40, fontWeight: 700, color: '#fff', letterSpacing: '-1px', marginBottom: 16 }}>Integration in 60 seconds</h2>
-        <p style={{ fontSize: 17, color: '#64748b', marginBottom: 44 }}>Works with OpenAI, Anthropic, Gemini, and any OpenAI-compatible API.</p>
+        <p style={{ fontSize: 17, color: '#64748b', marginBottom: 44 }}>Works with OpenAI, Anthropic, and Gemini.</p>
         <div style={{
           textAlign: 'left', borderRadius: 16,
           border: '1px solid rgba(255,255,255,0.1)',
@@ -584,7 +584,7 @@ function FAQ() {
     },
     {
       q: 'How long does integration take?',
-      a: 'For OpenAI, Anthropic, Gemini, or any OpenAI-compatible API, integration means pointing your client at our proxy and adding our API key as a header. Most teams are logging within 60 seconds of creating an account.',
+      a: 'For OpenAI, Anthropic, and Gemini, integration means pointing your client at our proxy and adding our API key as a header. Most teams are logging within 60 seconds of creating an account.',
     },
     {
       q: 'Does AILedger add latency to my AI calls?',
@@ -592,7 +592,7 @@ function FAQ() {
     },
     {
       q: 'Which AI providers are supported?',
-      a: 'OpenAI, Anthropic, and Google Gemini are natively supported. Any API that follows the OpenAI-compatible format also works without any additional configuration.',
+      a: 'OpenAI, Anthropic, and Google Gemini. Each upstream is routed through a dedicated path on the proxy (/proxy/openai, /proxy/anthropic, /proxy/gemini). Additional providers are on the roadmap — open an issue on GitHub if you need one we do not yet support.',
     },
     {
       q: 'Is AILedger sufficient for EU AI Act compliance on its own?',
@@ -802,6 +802,32 @@ function Docs() {
               {s(c.plain, '  messages=[{')}{s(c.str, '"role"')}{s(c.plain, ': ')}{s(c.str, '"user"')}{s(c.plain, ', ')}{s(c.str, '"content"')}{s(c.plain, ': ')}{s(c.str, '"Hello!"')}{s(c.plain, '}]\n)\n')}
               {s(c.fn, 'print')}{s(c.plain, '(completion.choices[')}{s(c.str, '0')}{s(c.plain, '].message.content)\n')}
             </>)}
+
+            <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.8, marginTop: 24, marginBottom: 4 }}>Node / TypeScript: <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>npm install openai</code></p>
+            {codeBlock('openai_example.ts', `import OpenAI from "openai";\n\nconst client = new OpenAI({\n  apiKey: process.env.OPENAI_API_KEY,\n  baseURL: "${PROXY_URL}/proxy/openai",\n  defaultHeaders: { "x-ailedger-key": "alg_sk_..." },\n});\n\nconst completion = await client.chat.completions.create({\n  model: "gpt-4.1-mini",\n  messages: [{ role: "user", content: "Hello!" }],\n});\nconsole.log(completion.choices[0].message.content);\n`, `import OpenAI from "openai";\n\nconst client = new OpenAI({\n  apiKey: process.env.OPENAI_API_KEY,\n  baseURL: "${PROXY_URL}/proxy/openai",\n  defaultHeaders: { "x-ailedger-key": "alg_sk_..." },\n});\n\nconst completion = await client.chat.completions.create({\n  model: "gpt-4.1-mini",\n  messages: [{ role: "user", content: "Hello!" }],\n});\nconsole.log(completion.choices[0].message.content);\n`)}
+
+            <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.8, marginTop: 24, marginBottom: 8 }}>Before → After (one-line change):</p>
+            <pre style={{ margin: 0, padding: '14px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: '#0d1017', fontFamily: 'ui-monospace, monospace', fontSize: 12.5, lineHeight: 1.9, overflowX: 'auto' }}>
+              <code>
+                <span style={{ color: '#ef4444' }}>{`- baseURL: "https://api.openai.com/v1"`}</span>{'\n'}
+                <span style={{ color: '#22c55e' }}>{`+ baseURL: "${PROXY_URL}/proxy/openai"`}</span>{'\n'}
+                <span style={{ color: '#22c55e' }}>{`+ header  "x-ailedger-key: alg_sk_..."`}</span>
+              </code>
+            </pre>
+
+            <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.8, marginTop: 24, marginBottom: 8 }}>What passes through:</p>
+            <ul style={{ fontSize: 13.5, color: '#94a3b8', lineHeight: 1.9, paddingLeft: 20, margin: 0 }}>
+              <li><strong style={{ color: '#e2e8f0' }}>Function / tool calling</strong> — transparent, no changes.</li>
+              <li><strong style={{ color: '#e2e8f0' }}>Vision (image inputs)</strong> — transparent, no changes.</li>
+              <li><strong style={{ color: '#e2e8f0' }}>Streaming (<code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>stream: true</code>)</strong> — forwarded end-to-end, but the proxy buffers the full SSE body before returning. Chunks arrive together rather than incrementally. Server-side parsers still decode the full response correctly; token-by-token client UX is lost.</li>
+              <li>Requests carrying the OpenAI SDK user-agent are stripped before forwarding — OpenAI's abuse detection flags SDK traffic from datacenter IPs. Not customer-visible.</li>
+            </ul>
+
+            <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.8, marginTop: 24, marginBottom: 8 }}>Verify end-to-end with curl:</p>
+            {codeBlock('test-openai.sh', `curl -sS ${PROXY_URL}/proxy/openai/v1/chat/completions \\\n  -H "Authorization: Bearer $OPENAI_API_KEY" \\\n  -H "x-ailedger-key: $AILEDGER_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model":"gpt-4.1-mini","messages":[{"role":"user","content":"ping"}],"max_tokens":5}'\n`, `curl -sS ${PROXY_URL}/proxy/openai/v1/chat/completions \\\n  -H "Authorization: Bearer $OPENAI_API_KEY" \\\n  -H "x-ailedger-key: $AILEDGER_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model":"gpt-4.1-mini","messages":[{"role":"user","content":"ping"}],"max_tokens":5}'\n`)}
+            <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.8, marginTop: 12 }}>
+              Expect a 200 with a chat completion body. Refresh <a href={DASHBOARD_URL} style={{ color: '#818cf8', textDecoration: 'none' }}>dash.ailedger.dev</a> — the request appears in your logs within ~1s.
+            </p>
           </section>
 
           {/* Anthropic */}
@@ -820,6 +846,32 @@ function Docs() {
               {s(c.plain, '  messages=[{')}{s(c.str, '"role"')}{s(c.plain, ': ')}{s(c.str, '"user"')}{s(c.plain, ', ')}{s(c.str, '"content"')}{s(c.plain, ': ')}{s(c.str, '"Hello, Claude"')}{s(c.plain, '}]\n)\n')}
               {s(c.fn, 'print')}{s(c.plain, '(message.content)\n')}
             </>)}
+
+            <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.8, marginTop: 24, marginBottom: 4 }}>Node / TypeScript: <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>npm install @anthropic-ai/sdk</code></p>
+            {codeBlock('anthropic_example.ts', `import Anthropic from "@anthropic-ai/sdk";\n\nconst client = new Anthropic({\n  apiKey: process.env.ANTHROPIC_API_KEY,\n  baseURL: "${PROXY_URL}/proxy/anthropic",\n  defaultHeaders: { "x-ailedger-key": "alg_sk_..." },\n});\n\nconst message = await client.messages.create({\n  model: "claude-opus-4-6",\n  max_tokens: 1024,\n  messages: [{ role: "user", content: "Hello, Claude" }],\n});\nconsole.log(message.content);\n`, `import Anthropic from "@anthropic-ai/sdk";\n\nconst client = new Anthropic({\n  apiKey: process.env.ANTHROPIC_API_KEY,\n  baseURL: "${PROXY_URL}/proxy/anthropic",\n  defaultHeaders: { "x-ailedger-key": "alg_sk_..." },\n});\n\nconst message = await client.messages.create({\n  model: "claude-opus-4-6",\n  max_tokens: 1024,\n  messages: [{ role: "user", content: "Hello, Claude" }],\n});\nconsole.log(message.content);\n`)}
+
+            <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.8, marginTop: 24, marginBottom: 8 }}>Before → After (one-line change):</p>
+            <pre style={{ margin: 0, padding: '14px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: '#0d1017', fontFamily: 'ui-monospace, monospace', fontSize: 12.5, lineHeight: 1.9, overflowX: 'auto' }}>
+              <code>
+                <span style={{ color: '#ef4444' }}>{`- baseURL: "https://api.anthropic.com"`}</span>{'\n'}
+                <span style={{ color: '#22c55e' }}>{`+ baseURL: "${PROXY_URL}/proxy/anthropic"`}</span>{'\n'}
+                <span style={{ color: '#22c55e' }}>{`+ header  "x-ailedger-key: alg_sk_..."`}</span>
+              </code>
+            </pre>
+
+            <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.8, marginTop: 24, marginBottom: 8 }}>What passes through:</p>
+            <ul style={{ fontSize: 13.5, color: '#94a3b8', lineHeight: 1.9, paddingLeft: 20, margin: 0 }}>
+              <li><strong style={{ color: '#e2e8f0' }}>Tool use (<code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>tools</code> / <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>tool_use</code>)</strong> — transparent, no changes.</li>
+              <li><strong style={{ color: '#e2e8f0' }}>Vision (image blocks)</strong> — transparent, no changes.</li>
+              <li><strong style={{ color: '#e2e8f0' }}>Extended thinking, prompt caching, system prompts</strong> — transparent, no changes.</li>
+              <li><strong style={{ color: '#e2e8f0' }}>Streaming (<code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>stream: true</code>)</strong> — forwarded end-to-end, but the proxy buffers the full SSE body before returning. Chunks arrive together rather than incrementally. Server-side parsers still decode correctly; token-by-token client UX is lost.</li>
+            </ul>
+
+            <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.8, marginTop: 24, marginBottom: 8 }}>Verify end-to-end with curl:</p>
+            {codeBlock('test-anthropic.sh', `curl -sS ${PROXY_URL}/proxy/anthropic/v1/messages \\\n  -H "x-api-key: $ANTHROPIC_API_KEY" \\\n  -H "anthropic-version: 2023-06-01" \\\n  -H "x-ailedger-key: $AILEDGER_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model":"claude-opus-4-6","max_tokens":5,"messages":[{"role":"user","content":"ping"}]}'\n`, `curl -sS ${PROXY_URL}/proxy/anthropic/v1/messages \\\n  -H "x-api-key: $ANTHROPIC_API_KEY" \\\n  -H "anthropic-version: 2023-06-01" \\\n  -H "x-ailedger-key: $AILEDGER_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model":"claude-opus-4-6","max_tokens":5,"messages":[{"role":"user","content":"ping"}]}'\n`)}
+            <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.8, marginTop: 12 }}>
+              Expect a 200 with a Messages response body. Refresh <a href={DASHBOARD_URL} style={{ color: '#818cf8', textDecoration: 'none' }}>dash.ailedger.dev</a> — the request appears in your logs within ~1s.
+            </p>
           </section>
 
           {/* Gemini */}
@@ -839,6 +891,32 @@ function Docs() {
               {s(c.plain, '  contents=')}{s(c.str, '"Explain how AI works in a few words"')}{s(c.plain, '\n)\n')}
               {s(c.fn, 'print')}{s(c.plain, '(response.text)\n')}
             </>)}
+
+            <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.8, marginTop: 24, marginBottom: 4 }}>Node / TypeScript: <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>npm install @google/genai</code></p>
+            {codeBlock('gemini_example.ts', `import { GoogleGenAI } from "@google/genai";\n\nconst client = new GoogleGenAI({\n  apiKey: process.env.GEMINI_API_KEY,\n  httpOptions: {\n    baseUrl: "${PROXY_URL}/proxy/gemini",\n    headers: { "x-ailedger-key": "alg_sk_..." },\n  },\n});\n\nconst response = await client.models.generateContent({\n  model: "gemini-2.5-flash",\n  contents: "Explain how AI works in a few words",\n});\nconsole.log(response.text);\n`, `import { GoogleGenAI } from "@google/genai";\n\nconst client = new GoogleGenAI({\n  apiKey: process.env.GEMINI_API_KEY,\n  httpOptions: {\n    baseUrl: "${PROXY_URL}/proxy/gemini",\n    headers: { "x-ailedger-key": "alg_sk_..." },\n  },\n});\n\nconst response = await client.models.generateContent({\n  model: "gemini-2.5-flash",\n  contents: "Explain how AI works in a few words",\n});\nconsole.log(response.text);\n`)}
+
+            <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.8, marginTop: 24, marginBottom: 8 }}>Before → After (one-line change):</p>
+            <pre style={{ margin: 0, padding: '14px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: '#0d1017', fontFamily: 'ui-monospace, monospace', fontSize: 12.5, lineHeight: 1.9, overflowX: 'auto' }}>
+              <code>
+                <span style={{ color: '#ef4444' }}>{`- baseUrl: "https://generativelanguage.googleapis.com"`}</span>{'\n'}
+                <span style={{ color: '#22c55e' }}>{`+ baseUrl: "${PROXY_URL}/proxy/gemini"`}</span>{'\n'}
+                <span style={{ color: '#22c55e' }}>{`+ header   "x-ailedger-key: alg_sk_..."`}</span>
+              </code>
+            </pre>
+
+            <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.8, marginTop: 24, marginBottom: 8 }}>What passes through:</p>
+            <ul style={{ fontSize: 13.5, color: '#94a3b8', lineHeight: 1.9, paddingLeft: 20, margin: 0 }}>
+              <li><strong style={{ color: '#e2e8f0' }}>Function calling (<code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>tools</code>)</strong> — transparent, no changes.</li>
+              <li><strong style={{ color: '#e2e8f0' }}>Vision (inline or file-referenced images)</strong> — transparent, no changes.</li>
+              <li><strong style={{ color: '#e2e8f0' }}>Auth via <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>?key=</code> query string or <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>x-goog-api-key</code> header</strong> — both forwarded as-is.</li>
+              <li><strong style={{ color: '#e2e8f0' }}>Streaming (<code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>:streamGenerateContent</code>)</strong> — forwarded end-to-end, but the proxy buffers the full SSE body before returning. Chunks arrive together rather than incrementally. Server-side parsers still decode correctly; token-by-token client UX is lost.</li>
+            </ul>
+
+            <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.8, marginTop: 24, marginBottom: 8 }}>Verify end-to-end with curl:</p>
+            {codeBlock('test-gemini.sh', `curl -sS "${PROXY_URL}/proxy/gemini/v1beta/models/gemini-2.5-flash:generateContent" \\\n  -H "x-goog-api-key: $GEMINI_API_KEY" \\\n  -H "x-ailedger-key: $AILEDGER_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"contents":[{"parts":[{"text":"ping"}]}]}'\n`, `curl -sS "${PROXY_URL}/proxy/gemini/v1beta/models/gemini-2.5-flash:generateContent" \\\n  -H "x-goog-api-key: $GEMINI_API_KEY" \\\n  -H "x-ailedger-key: $AILEDGER_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"contents":[{"parts":[{"text":"ping"}]}]}'\n`)}
+            <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.8, marginTop: 12 }}>
+              Expect a 200 with a Gemini <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>generateContent</code> response. Refresh <a href={DASHBOARD_URL} style={{ color: '#818cf8', textDecoration: 'none' }}>dash.ailedger.dev</a> — the request appears in your logs within ~1s.
+            </p>
           </section>
 
           {/* Test your keys */}

@@ -12,7 +12,7 @@ Open-source AI inference logging infrastructure for EU AI Act Article 12 complia
 
 ## What it does
 
-AILedger sits transparently between your application and your AI provider (OpenAI, Anthropic, Gemini, or any OpenAI-compatible API). Every inference is logged asynchronously with:
+AILedger sits transparently between your application and your AI provider (OpenAI, Anthropic, or Gemini). Every inference is logged asynchronously with:
 
 - SHA-256 hash of the input
 - SHA-256 hash of the output
