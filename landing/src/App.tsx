@@ -306,19 +306,19 @@ function HowItWorks() {
     {
       n: '02',
       title: 'Every inference is logged',
-      body: 'Inputs and outputs are SHA-256 hashed and stored as append-only records. No personal data retained. Fully GDPR compatible.',
+      body: 'Inputs and outputs are SHA-256 hashed and stored as append-only records. No personal data retained — GDPR-clean by design.',
     },
     {
       n: '03',
       title: 'Export your compliance report',
-      body: 'One click generates a formatted EU AI Act Article 12 audit report with full inference history, ready for regulators.',
+      body: 'One click generates a formatted EU AI Act Article 12 PDF audit report with full inference history, ready to hand to regulators.',
     },
   ]
   return (
     <section id="how-it-works" className="section-pad" style={{ padding: '100px 32px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 64 }}>
-          <h2 className="section-title" style={{ fontSize: 40, fontWeight: 700, color: '#fff', letterSpacing: '-1px', marginBottom: 16 }}>Drop-in. Fully compliant.</h2>
+          <h2 className="section-title" style={{ fontSize: 40, fontWeight: 700, color: '#fff', letterSpacing: '-1px', marginBottom: 16 }}>Drop-in. Audit-ready.</h2>
           <p style={{ fontSize: 17, color: '#64748b', maxWidth: 480, margin: '0 auto' }}>
             AILedger sits transparently between your app and your AI provider.
           </p>
@@ -432,7 +432,7 @@ function CodeSnippet() {
               <span style={{ color: '#e2e8f0' }}>{'{'}  </span>
               <span style={{ color: '#86efac' }}>"x-ailedger-key"</span>
               <span style={{ color: '#e2e8f0' }}>: </span>
-              <span style={{ color: '#86efac' }}>"agl_sk_..."</span>
+              <span style={{ color: '#86efac' }}>"alg_sk_..."</span>
               <span style={{ color: '#e2e8f0' }}> {'}'}{'\n)' }</span>
             </code>
           </pre>
@@ -576,11 +576,11 @@ function FAQ() {
   const items = [
     {
       q: 'What is the EU AI Act Article 12?',
-      a: 'Article 12 of the EU AI Act (Regulation 2024/1689) requires operators of high-risk AI systems to maintain automatic logging of events throughout the system\'s lifetime. These logs must be tamper-evident and sufficient to enable post-hoc auditing. AILedger is purpose-built to satisfy this requirement.',
+      a: 'Article 12 of the EU AI Act (Regulation 2024/1689) requires operators of high-risk AI systems to maintain automatic logging of events throughout the system\'s lifetime. These logs must be tamper-evident and sufficient to enable post-hoc auditing. AILedger is purpose-built to help you meet this requirement.',
     },
     {
       q: 'Does AILedger store my prompts or AI outputs?',
-      a: 'No. AILedger never stores raw inputs or outputs. It stores only SHA-256 cryptographic hashes - one-way fingerprints that prove a specific exchange occurred without retaining any content. This makes AILedger fully GDPR compatible.',
+      a: 'No. AILedger never stores raw inputs or outputs. It stores only SHA-256 cryptographic hashes - one-way fingerprints that prove a specific exchange occurred without retaining any content. This keeps AILedger GDPR-clean by design.',
     },
     {
       q: 'How long does integration take?',
@@ -596,7 +596,7 @@ function FAQ() {
     },
     {
       q: 'Is AILedger sufficient for EU AI Act compliance on its own?',
-      a: 'AILedger satisfies the logging and record-keeping requirements of Article 12. Full EU AI Act compliance for high-risk systems also involves conformity assessments, transparency obligations, and human oversight measures. AILedger handles the audit trail piece - the part that regulators will ask for first.',
+      a: 'No - AILedger facilitates compliance, it does not certify it. AILedger gives you the tamper-evident audit trail Article 12 requires for high-risk AI systems. Full EU AI Act compliance also involves conformity assessments, transparency obligations, and human oversight measures that you are responsible for. AILedger handles the audit trail piece - the part regulators will ask for first.',
     },
     {
       q: 'Where is data stored?',

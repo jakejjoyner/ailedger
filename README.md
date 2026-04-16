@@ -90,7 +90,7 @@ Only SHA-256 hashes of inputs/outputs are stored. A hash proves a specific excha
 Supabase service role credentials are stored as Cloudflare Worker secrets. The repo contains zero hardcoded keys — `.env.local` and `.dev.vars` are gitignored.
 
 ### API key storage
-Customer keys (`ail_sk_...`) are stored as SHA-256 hashes. Raw keys are shown once on creation and never persisted. Keys are revocable instantly.
+Customer keys (`alg_sk_...`) are stored as SHA-256 hashes. Raw keys are shown once on creation and never persisted. Keys are revocable instantly.
 
 ## Article 12 mapping
 
