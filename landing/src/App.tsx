@@ -168,8 +168,8 @@ function Hero() {
           You built the AI.<br />
           <span style={{ color: '#818cf8' }}>We prove it behaved.</span>
         </h1>
-        <p className="hero-subtitle fade-in fade-3" style={{ fontSize: 20, color: '#94a3b8', lineHeight: 1.7, marginBottom: 44, maxWidth: 560, margin: '0 auto 44px' }}>
-          Drop-in integration that logs every AI inference as an immutable, tamper-evident legal record - ready for EU AI Act compliance.
+        <p className="hero-subtitle fade-in fade-3" style={{ fontSize: 20, color: '#94a3b8', lineHeight: 1.7, marginBottom: 44, maxWidth: 620, margin: '0 auto 44px' }}>
+          A drop-in proxy for your OpenAI, Anthropic, or Gemini calls. Every inference becomes a tamper-evident audit record — exportable as a one-click PDF for the Article&nbsp;12 audit trail high-risk AI systems must keep.
         </p>
         <div className="hero-cta-group fade-in fade-4" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
           <a href={DASHBOARD_URL} style={{
@@ -318,7 +318,7 @@ function HowItWorks() {
     <section id="how-it-works" className="section-pad" style={{ padding: '100px 32px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 64 }}>
-          <h2 className="section-title" style={{ fontSize: 40, fontWeight: 700, color: '#fff', letterSpacing: '-1px', marginBottom: 16 }}>Drop-in. Fully compliant.</h2>
+          <h2 className="section-title" style={{ fontSize: 40, fontWeight: 700, color: '#fff', letterSpacing: '-1px', marginBottom: 16 }}>Drop-in. Audit-ready.</h2>
           <p style={{ fontSize: 17, color: '#64748b', maxWidth: 480, margin: '0 auto' }}>
             AILedger sits transparently between your app and your AI provider.
           </p>
@@ -565,7 +565,7 @@ function Pricing() {
           ))}
         </div>
         <p style={{ textAlign: 'center', marginTop: 32, fontSize: 13, color: '#475569' }}>
-          Annual plans available - save 2 months. Contact us for enterprise pricing.
+          Annual plans: pay for 10 months, get 12 (save ~17%). Contact us for enterprise pricing.
         </p>
       </div>
     </section>
@@ -576,7 +576,7 @@ function FAQ() {
   const items = [
     {
       q: 'What is the EU AI Act Article 12?',
-      a: 'Article 12 of the EU AI Act (Regulation 2024/1689) requires operators of high-risk AI systems to maintain automatic logging of events throughout the system\'s lifetime. These logs must be tamper-evident and sufficient to enable post-hoc auditing. AILedger is purpose-built to satisfy this requirement.',
+      a: 'Article 12 of the EU AI Act (Regulation 2024/1689) requires operators of high-risk AI systems to maintain automatic logging of events throughout the system\'s lifetime. These logs must be tamper-evident and sufficient to enable post-hoc auditing. AILedger is purpose-built to give you the audit trail Article 12 calls for.',
     },
     {
       q: 'Does AILedger store my prompts or AI outputs?',
@@ -596,7 +596,7 @@ function FAQ() {
     },
     {
       q: 'Is AILedger sufficient for EU AI Act compliance on its own?',
-      a: 'AILedger satisfies the logging and record-keeping requirements of Article 12. Full EU AI Act compliance for high-risk systems also involves conformity assessments, transparency obligations, and human oversight measures. AILedger handles the audit trail piece - the part that regulators will ask for first.',
+      a: 'No — and no single tool is. AILedger provides the logging and record-keeping infrastructure that Article 12 requires. Full EU AI Act compliance for high-risk systems also involves conformity assessments, transparency obligations, and human oversight measures that AILedger does not provide. AILedger handles the audit trail piece — the part regulators will ask for first.',
     },
     {
       q: 'Where is data stored?',
