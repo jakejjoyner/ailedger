@@ -1,0 +1,59 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "onboard-auth",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Deploy target (change to your chosen domain):
+  //   https://login.joynerventures.com
+  "routes": [
+    { "pattern": "login.joynerventures.com", "custom_domain": true }
+  ],
+
+  // D1 binding — create with:
+  //   wrangler d1 create onboard_auth
+  // and paste the id below.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "onboard_auth",
+      "database_id": "REPLACE_WITH_D1_ID"
+    }
+  ],
+
+  // KV for rate-limit counters + short-lived challenges.
+  // Create:  wrangler kv namespace create AUTH_KV
+  "kv_namespaces": [
+    {
+      "binding": "AUTH_KV",
+      "id": "REPLACE_WITH_KV_ID"
+    }
+  ],
+
+  // Non-secret config. Secrets go via `wrangler secret put`:
+  //   SESSION_JWT_SECRET   (>= 32 bytes random)
+  //   REFRESH_JWT_SECRET   (>= 32 bytes random, distinct from SESSION_JWT_SECRET)
+  //   RESEND_API_KEY       (for magic-link email)
+  //   ADMIN_BOOTSTRAP_TOKEN (one-shot token for /admin/grant before first admin exists)
+  "vars": {
+    "RP_ID": "joynerventures.com",
+    "RP_NAME": "Joyner Ventures",
+    "RP_ORIGIN": "https://login.joynerventures.com",
+    "MAGIC_LINK_FROM": "auth@joynerventures.com",
+    "SESSION_TTL_SECONDS": "900",
+    "REFRESH_TTL_SECONDS": "2592000",
+    "MAGIC_LINK_TTL_SECONDS": "600",
+    "ALLOWED_RETURN_HOSTS": "sales.ailedger.dev,login.joynerventures.com"
+  },
+
+  "observability": {
+    "enabled": true
+  },
+
+  // Serve /public as static assets bound to env.ASSETS.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  }
+}
