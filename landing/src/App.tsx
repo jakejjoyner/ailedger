@@ -3,6 +3,17 @@ import { useState } from 'react'
 const DASHBOARD_URL = 'https://dash.ailedger.dev?view=sign-up'
 const PROXY_URL = 'https://proxy.ailedger.dev'
 
+// Resolve hero-entry-animation state exactly once per page load (survives strict-mode
+// double-render; gated so returning-from-internal-route users don't re-watch the reveal).
+const heroAnimClass = ((): string => {
+  if (typeof window === 'undefined') return ''
+  try {
+    if (window.sessionStorage.getItem('hero-played') === '1') return 'no-anim'
+    window.sessionStorage.setItem('hero-played', '1')
+  } catch { /* sessionStorage unavailable — play the animation */ }
+  return ''
+})()
+
 function App() {
   const path = window.location.pathname
   if (path === '/legal' || path === '/terms' || path === '/privacy') return <Legal />
@@ -132,6 +143,10 @@ function Nav() {
 }
 
 function Hero() {
+  // Play the staggered entry once per tab, then skip on re-renders / internal nav.
+  // Resolved once at module scope below, so strict-mode double-render doesn't swallow it.
+  const anim = heroAnimClass
+
   return (
     <section className="hero-section" style={{
       textAlign: 'center',
@@ -143,42 +158,40 @@ function Hero() {
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {/* Ambient glow behind hero */}
-      <div aria-hidden="true" style={{
+      {/* Ambient glow behind hero — quieter, wider spread */}
+      <div aria-hidden="true" className="hero-glow" style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: 900, height: 900,
-        background: 'radial-gradient(circle, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.05) 35%, transparent 70%)',
+        width: 1100, height: 1100,
+        background: 'radial-gradient(circle, rgba(99,102,241,0.11) 0%, rgba(99,102,241,0.03) 40%, transparent 72%)',
         pointerEvents: 'none',
         zIndex: 0,
       }} />
       <div style={{ maxWidth: 780, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-        <div className="fade-in fade-1" style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          fontSize: 13, fontWeight: 500, color: '#818cf8',
-          background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)',
-          borderRadius: 999, padding: '5px 14px', marginBottom: 36,
-        }}>
+        <div className={`hero-eyebrow fade-in fade-1 ${anim}`}>
+          <span className="hero-eyebrow-dot" aria-hidden="true" />
           EU AI Act enforcement begins August 2, 2026
         </div>
-        <h1 className="hero-title fade-in fade-2" style={{
+        <h1 className="hero-title" style={{
           fontSize: 72, fontWeight: 700, color: '#fff',
-          letterSpacing: '-2.5px', lineHeight: 1.02, marginBottom: 28,
+          letterSpacing: '-2px', lineHeight: 1.02, marginBottom: 28,
         }}>
-          You built the AI.<br />
-          <span style={{ color: '#818cf8' }}>We prove it behaved.</span>
+          <span className={`hero-title-line fade-in fade-2a ${anim}`}>You build the AI.</span>
+          <br />
+          <span className={`hero-title-accent fade-in fade-2b ${anim}`} style={{ color: '#818cf8' }}>We prove it behaved.</span>
         </h1>
-        <p className="hero-subtitle fade-in fade-3" style={{ fontSize: 20, color: '#94a3b8', lineHeight: 1.7, marginBottom: 44, maxWidth: 560, margin: '0 auto 44px' }}>
-          Drop-in integration that logs every AI inference as an immutable, tamper-evident legal record - ready for EU AI Act compliance.
+        <p className={`hero-subtitle fade-in fade-3 ${anim}`} style={{ fontSize: 19, color: '#94a3b8', lineHeight: 1.65, maxWidth: 560, margin: '0 auto 44px' }}>
+          A drop-in proxy that logs every inference as a tamper-evident record. Audit-ready for the EU AI Act.
         </p>
-        <div className="hero-cta-group fade-in fade-4" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href={DASHBOARD_URL} style={{
+        <div className={`hero-cta-group fade-in fade-4 ${anim}`} style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <a className="hero-cta-primary" href={DASHBOARD_URL} style={{
             padding: '14px 28px', background: '#4f46e5', color: '#fff',
             fontWeight: 600, fontSize: 15, borderRadius: 12, textDecoration: 'none',
+            letterSpacing: '-0.005em',
           }}>
             Start for free
           </a>
-          <a href="#how-it-works" style={{
+          <a className="hero-cta-secondary" href="#how-it-works" style={{
             padding: '14px 28px', color: '#94a3b8', fontSize: 15,
             textDecoration: 'none', borderRadius: 12,
             border: '1px solid rgba(255,255,255,0.08)',

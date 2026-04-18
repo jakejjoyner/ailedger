@@ -137,6 +137,19 @@ export default function SystemSettings({ customerId }: { customerId: string }) {
   }
 
   async function deleteSystem(id: string) {
+    const { count } = await supabase
+      .from('api_keys')
+      .select('id', { count: 'exact', head: true })
+      .eq('customer_id', customerId)
+      .eq('system_id', id)
+    const refCount = count ?? 0
+    if (refCount > 0) {
+      const msg =
+        refCount === 1
+          ? '1 API key references this system and will be unassigned. Continue?'
+          : `${refCount} API keys reference this system and will be unassigned. Continue?`
+      if (!window.confirm(msg)) return
+    }
     // .select() returns the rows actually deleted. Under RLS, a missing
     // DELETE policy silently filters the row out and Postgres reports 0
     // rows affected; PostgREST returns 204 regardless. Without this
