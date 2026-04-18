@@ -1,6 +1,6 @@
 # John Console — Pasha's session-entry dashboard
 
-**Status:** MVP scaffold (2026-04-18). Not yet deployed.
+**Status:** Deployed to `sales.ailedger.dev` (2026-04-18). Auth still TODO (see below).
 **Target domain:** `sales.ailedger.dev`
 **Purpose:** the web UI Pasha logs into at contractor onboarding. Chat interface with John (the sub-town Mayor persona). No shell access, no raw API keys, contractor never sees filesystem.
 
@@ -47,14 +47,35 @@ Every chat turn:
 - Session cookie scoped to the contractor's `system_id` so every /chat POST carries their scoped AILedger key, not a shared one.
 - Pre-launch blockers captured in follow-up bead: DNS provisioning, Resend/Brevo sender config, session-store (Cloudflare KV), rate-limit per session.
 
-## Deploy (when ready)
+## Deploy
 
-```
+First-time deploy to `sales.ailedger.dev` — exact sequence run on 2026-04-18 (ai-92p):
+
+```bash
 cd john-console
+
+# 1. Cloudflare DNS: provisioned in the dashboard (sales.ailedger.dev → john-console worker custom-domain binding).
+#    Once wrangler.jsonc has the `routes` block active, `wrangler deploy` reconciles this.
+
+# 2. Secrets — set BEFORE first deploy, otherwise POST /chat returns 500:
+wrangler secret put AILEDGER_KEY       # paste alg_sk_* dogfood tenant key
+wrangler secret put ANTHROPIC_API_KEY  # paste Jake's sk-ant-* key (operator step, never committed)
+
+# 3. Deploy:
 wrangler deploy
-# DNS: add CNAME sales.ailedger.dev → <worker-default-url>
-# Secrets: wrangler secret put AILEDGER_KEY; wrangler secret put ANTHROPIC_API_KEY
+
+# 4. Smoke test:
+curl -sS https://sales.ailedger.dev/ | head -5                        # expect HTML chat UI
+curl -sS -X POST https://sales.ailedger.dev/chat \
+     -H 'Content-Type: application/json' \
+     -d '{"messages":[{"role":"user","content":"say hi"}]}'            # expect {"content":"..."} from John
 ```
+
+Confirm the POST round-trip appears in the AILedger dashboard as a logged inference on the dogfood tenant — that's the end-to-end signal.
+
+### Rollback
+
+Comment the `routes` block in `wrangler.jsonc` and `wrangler deploy` — traffic will fall back to `john-console.jakejoyner9.workers.dev` (the default `workers.dev` URL).
 
 ## Non-goals (MVP)
 
