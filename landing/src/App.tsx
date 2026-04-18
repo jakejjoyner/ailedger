@@ -165,7 +165,7 @@ function Hero() {
           fontSize: 72, fontWeight: 700, color: '#fff',
           letterSpacing: '-2.5px', lineHeight: 1.02, marginBottom: 28,
         }}>
-          You built the AI.<br />
+          You build the AI.<br />
           <span style={{ color: '#818cf8' }}>We prove it behaved.</span>
         </h1>
         <p className="hero-subtitle fade-in fade-3" style={{ fontSize: 20, color: '#94a3b8', lineHeight: 1.7, marginBottom: 44, maxWidth: 560, margin: '0 auto 44px' }}>
