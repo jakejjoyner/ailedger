@@ -54,3 +54,7 @@ test_proxy.py
 /state.json
 /CLAUDE.md
 /CLAUDE.local.md
+
+.dev.vars*
+!.dev.vars.example
+!.env.example
