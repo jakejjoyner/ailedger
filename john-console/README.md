@@ -1,7 +1,7 @@
 # John Console — Pasha's session-entry dashboard
 
-**Status:** MVP scaffold (2026-04-18). Not yet deployed.
-**Target domain:** `sales.ailedger.dev`
+**Status:** Deployed to workers.dev 2026-04-18 (pre-DNS). Live at <https://john-console.jakejoyner9.workers.dev>.
+**Target domain:** `sales.ailedger.dev` (custom route activates once DNS lands — see `ai-lub`)
 **Purpose:** the web UI Pasha logs into at contractor onboarding. Chat interface with John (the sub-town Mayor persona). No shell access, no raw API keys, contractor never sees filesystem.
 
 ## Architecture
@@ -47,13 +47,36 @@ Every chat turn:
 - Session cookie scoped to the contractor's `system_id` so every /chat POST carries their scoped AILedger key, not a shared one.
 - Pre-launch blockers captured in follow-up bead: DNS provisioning, Resend/Brevo sender config, session-store (Cloudflare KV), rate-limit per session.
 
-## Deploy (when ready)
+## Deploy
 
-```
+**Live worker (pre-DNS, dogfood reference):** <https://john-console.jakejoyner9.workers.dev>
+
+This is the canonical workers.dev URL Jake smoke-tests against until DNS for
+`sales.ailedger.dev` lands (see bead `ai-lub`). Once DNS is provisioned, the
+custom domain route in `wrangler.jsonc` gets uncommented and `sales.ailedger.dev`
+becomes the public URL (workers.dev URL stays live as a fallback).
+
+```sh
 cd john-console
+
+# One-time secret setup (Jake only — do NOT commit):
+wrangler secret put AILEDGER_KEY       # alg_sk_* dogfood tenant key
+wrangler secret put ANTHROPIC_API_KEY  # sk-ant-* Jake's Anthropic key
+
+# Deploy:
 wrangler deploy
-# DNS: add CNAME sales.ailedger.dev → <worker-default-url>
-# Secrets: wrangler secret put AILEDGER_KEY; wrangler secret put ANTHROPIC_API_KEY
+
+# Smoke test (expect 200 HTML + John response JSON):
+curl -sS https://john-console.jakejoyner9.workers.dev/ | head -3
+curl -sS -X POST https://john-console.jakejoyner9.workers.dev/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","content":"say hi"}]}'
+
+# Verify inference lands on dogfood tenant:
+#   dash.ailedger.dev/inferences → latest row should match the /chat call above.
+
+# Post-DNS (when ai-lub lands): uncomment the "routes" block in wrangler.jsonc
+# and redeploy to activate sales.ailedger.dev.
 ```
 
 ## Non-goals (MVP)
