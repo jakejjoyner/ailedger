@@ -12,10 +12,9 @@
   },
   "workers_dev": true,
 
-  // Custom domain activation: uncomment once DNS for sales.ailedger.dev is provisioned.
-  // "routes": [
-  //   { "pattern": "sales.ailedger.dev", "custom_domain": true }
-  // ],
+  "routes": [
+    { "pattern": "sales.ailedger.dev", "custom_domain": true }
+  ],
 
   // Secrets set via `wrangler secret put`:
   //   AILEDGER_KEY       — alg_sk_* dogfood key
