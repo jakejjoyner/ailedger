@@ -13,9 +13,11 @@
  *   AILEDGER_KEY       — dogfood tenant API key (alg_sk_*)
  *   ANTHROPIC_API_KEY  — Jake's Anthropic key (passed through proxy)
  *
- * TODO (pre-Pasha): mailbox SSO magic-link auth + session cookie + per-session AILedger key.
+ * Env vars:
+ *   STREAMING_DISABLED — "1" / "true" to force non-streaming (emergency kill-switch).
+ *                        Default: streaming enabled.
  *
- * MVP has zero auth; suitable for Jake-local testing only.
+ * TODO (pre-Pasha): mailbox SSO magic-link auth + session cookie + per-session AILedger key.
  */
 
 const JOHN_PERSONA = `You are **John**, the Mayor of Jake Joyner's sales sub-town. A contractor named Pasha has logged in via this chat interface as part of their onboarding with Joyner Ventures LLC.
@@ -37,6 +39,80 @@ If Pasha asks to do outreach before the dry-run: decline, cite the welcome doc's
 # First session
 When Pasha sends his first message, greet him by name if identified, acknowledge he's just onboarded, ask what he wants to look at first (ICP targets / outreach drafts / CRM setup / week plan), and let him drive. Don't lecture — he's read the welcome doc.`;
 
+const PROXY_URL = 'https://proxy.ailedger.dev/proxy/anthropic/v1/messages';
+
+function streamingEnabled(env) {
+  const flag = String(env.STREAMING_DISABLED || '').toLowerCase();
+  return flag !== '1' && flag !== 'true';
+}
+
+function buildUpstreamBody(messages, stream) {
+  return {
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2048,
+    system: JOHN_PERSONA,
+    stream,
+    messages: messages.map(m => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: String(m.content || '').slice(0, 8000),
+    })),
+  };
+}
+
+function upstreamHeaders(env) {
+  return {
+    'Content-Type': 'application/json',
+    'anthropic-version': '2023-06-01',
+    'x-ailedger-key': env.AILEDGER_KEY,
+    'x-api-key': env.ANTHROPIC_API_KEY,
+  };
+}
+
+async function handleChatStreaming(messages, env) {
+  const upstream = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: upstreamHeaders(env),
+    body: JSON.stringify(buildUpstreamBody(messages, true)),
+  });
+
+  if (!upstream.ok || !upstream.body) {
+    const text = await upstream.text().catch(() => '');
+    let errMsg = 'upstream error';
+    try { errMsg = JSON.parse(text)?.error?.message || errMsg; } catch {}
+    return json({ error: errMsg, status: upstream.status }, upstream.status || 502);
+  }
+
+  // Pass the upstream SSE body straight through to the browser.
+  // If the proxy buffers, browser receives a single late burst — still renders
+  // incrementally via the client's SSE parser. If the proxy actually streams,
+  // tokens flow through in real time. Either way, identical client contract.
+  return new Response(upstream.body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    },
+  });
+}
+
+async function handleChatBuffered(messages, env) {
+  const upstream = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: upstreamHeaders(env),
+    body: JSON.stringify(buildUpstreamBody(messages, false)),
+  });
+
+  const data = await upstream.json().catch(() => ({}));
+  if (!upstream.ok) {
+    return json({ error: data?.error?.message || 'upstream error', status: upstream.status }, upstream.status);
+  }
+
+  const content = (data?.content || []).map(block => block?.text || '').join('').trim();
+  return json({ content });
+}
+
 async function handleChat(request, env) {
   if (request.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
@@ -57,34 +133,12 @@ async function handleChat(request, env) {
     return json({ error: 'worker not configured (missing AILEDGER_KEY or ANTHROPIC_API_KEY)' }, 500);
   }
 
-  const upstreamBody = {
-    model: 'claude-sonnet-4-6',
-    max_tokens: 2048,
-    system: JOHN_PERSONA,
-    messages: body.messages.map(m => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: String(m.content || '').slice(0, 8000),
-    })),
-  };
-
-  const upstream = await fetch('https://proxy.ailedger.dev/proxy/anthropic/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
-      'x-ailedger-key': env.AILEDGER_KEY,
-      'x-api-key': env.ANTHROPIC_API_KEY,
-    },
-    body: JSON.stringify(upstreamBody),
-  });
-
-  const data = await upstream.json();
-  if (!upstream.ok) {
-    return json({ error: data?.error?.message || 'upstream error', status: upstream.status }, upstream.status);
-  }
-
-  const content = (data?.content || []).map(block => block?.text || '').join('').trim();
-  return json({ content });
+  // Client opts in via body.stream === false to force buffered path (unit tests, curl).
+  // Server opts out globally via STREAMING_DISABLED env (emergency kill-switch).
+  const wantStream = body.stream !== false && streamingEnabled(env);
+  return wantStream
+    ? handleChatStreaming(body.messages, env)
+    : handleChatBuffered(body.messages, env);
 }
 
 function json(obj, status = 200) {

@@ -80,6 +80,22 @@
     0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
     30%           { opacity: 1; transform: translateY(-4px); }
   }
+  /* While the upstream is connected but not yet delivering tokens, the dots
+     pulse faster with a teal glow — signals "we're waiting on the proxy". */
+  .typing.progress-pulse span { animation: progressPulse 0.9s var(--ease) infinite; }
+  @keyframes progressPulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); box-shadow: 0 0 0 0 rgba(94, 234, 212, 0); }
+    50%      { opacity: 1;   transform: scale(1.15); box-shadow: 0 0 6px 2px rgba(94, 234, 212, 0.45); }
+  }
+  /* Streaming caret on the in-flight message */
+  .msg.john.streaming .body::after {
+    content: '';
+    display: inline-block; width: 7px; height: 14px; margin-left: 2px;
+    background: var(--accent); vertical-align: text-bottom; border-radius: 1px;
+    animation: caret 1s steps(2) infinite;
+  }
+  @keyframes caret { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+  .msg.john .error-inline { margin-top: 8px; color: #fca5a5; font-size: 12.5px; font-family: 'JetBrains Mono', monospace; }
 
   /* Composer */
   .composer-wrap { padding: 14px 22px 18px; background: linear-gradient(to top, var(--bg-0) 60%, transparent); position: sticky; bottom: 0; }
@@ -149,6 +165,7 @@ function renderMessage(role, text) {
   lbl.className = 'label';
   lbl.textContent = role === 'user' ? 'you' : 'John';
   const body = document.createElement('div');
+  body.className = 'body';
   if (role === 'john') body.innerHTML = renderMarkdown(text);
   else body.textContent = text;
   el.append(lbl, body);
@@ -157,9 +174,24 @@ function renderMessage(role, text) {
   return el;
 }
 
+// Empty John bubble that we'll fill as SSE deltas arrive.
+function createStreamingMessage() {
+  const el = document.createElement('div');
+  el.className = 'msg john streaming';
+  const lbl = document.createElement('div');
+  lbl.className = 'label';
+  lbl.textContent = 'John';
+  const body = document.createElement('div');
+  body.className = 'body';
+  el.append(lbl, body);
+  $messages.append(el);
+  el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return el;
+}
+
 function showTyping() {
   const el = document.createElement('div');
-  el.className = 'typing';
+  el.className = 'typing progress-pulse';
   el.innerHTML = '<span></span><span></span><span></span>';
   $messages.append(el);
   el.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -183,6 +215,80 @@ $input.addEventListener('input', () => {
   $input.style.height = Math.min($input.scrollHeight, 200) + 'px';
 });
 
+// Parse the portion of an Anthropic SSE stream we've accumulated.
+// Returns {events, remainder} — events is an array of {event, data}, remainder
+// is leftover text that didn't terminate in a blank line yet.
+function parseSSE(buffer) {
+  const events = [];
+  let idx;
+  while ((idx = buffer.indexOf('\n\n')) !== -1) {
+    const chunk = buffer.slice(0, idx);
+    buffer = buffer.slice(idx + 2);
+    const ev = { event: 'message', data: '' };
+    for (const line of chunk.split('\n')) {
+      if (line.startsWith('event:')) ev.event = line.slice(6).trim();
+      else if (line.startsWith('data:')) ev.data += (ev.data ? '\n' : '') + line.slice(5).trim();
+    }
+    if (ev.data) events.push(ev);
+  }
+  return { events, remainder: buffer };
+}
+
+// Stream John's reply into `msgEl`. Returns the final accumulated text.
+// Throws on network failure; on upstream-reported error events, it completes
+// with whatever was accumulated and attaches an inline error to the message.
+async function streamReply(response, msgEl) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const bodyEl = msgEl.querySelector('.body');
+  let buffer = '';
+  let accumulated = '';
+  let upstreamError = null;
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const { events, remainder } = parseSSE(buffer);
+    buffer = remainder;
+    for (const ev of events) {
+      let payload;
+      try { payload = JSON.parse(ev.data); } catch { continue; }
+      if (ev.event === 'content_block_delta' && payload?.delta?.type === 'text_delta') {
+        accumulated += payload.delta.text || '';
+        bodyEl.innerHTML = renderMarkdown(accumulated);
+        msgEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      } else if (ev.event === 'error') {
+        upstreamError = payload?.error?.message || 'stream error';
+      } else if (ev.event === 'message_stop') {
+        // normal completion
+      }
+    }
+  }
+  // flush any trailing decoder state
+  buffer += decoder.decode();
+  if (buffer) {
+    const { events } = parseSSE(buffer + '\n\n');
+    for (const ev of events) {
+      try {
+        const payload = JSON.parse(ev.data);
+        if (ev.event === 'content_block_delta' && payload?.delta?.type === 'text_delta') {
+          accumulated += payload.delta.text || '';
+          bodyEl.innerHTML = renderMarkdown(accumulated);
+        }
+      } catch {}
+    }
+  }
+  if (upstreamError) {
+    const err = document.createElement('div');
+    err.className = 'error-inline';
+    err.textContent = 'stream interrupted: ' + upstreamError;
+    msgEl.append(err);
+  }
+  msgEl.classList.remove('streaming');
+  return accumulated;
+}
+
 $form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = $input.value.trim();
@@ -194,19 +300,46 @@ $form.addEventListener('submit', async (e) => {
   history.push({ role: 'user', content: text });
 
   const typingEl = showTyping();
+  let msgEl = null;
   try {
     const r = await fetch('/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream, application/json' },
       body: JSON.stringify({ messages: history }),
     });
-    const data = await r.json();
-    typingEl.remove();
-    if (!r.ok) setSystemLine('error: ' + (data.error || r.status));
-    else { renderMessage('john', data.content); history.push({ role: 'assistant', content: data.content }); }
+    const ct = r.headers.get('content-type') || '';
+
+    if (!r.ok) {
+      typingEl.remove();
+      let errMsg = 'HTTP ' + r.status;
+      try { errMsg = (await r.json()).error || errMsg; } catch {}
+      setSystemLine('error: ' + errMsg);
+      return;
+    }
+
+    if (ct.includes('text/event-stream')) {
+      typingEl.remove();
+      msgEl = createStreamingMessage();
+      const full = await streamReply(r, msgEl);
+      if (full) history.push({ role: 'assistant', content: full });
+      else setSystemLine('empty response');
+    } else {
+      const data = await r.json();
+      typingEl.remove();
+      renderMessage('john', data.content || '');
+      if (data.content) history.push({ role: 'assistant', content: data.content });
+    }
   } catch (err) {
     typingEl.remove();
-    setSystemLine('network: ' + err.message);
+    if (msgEl) {
+      msgEl.classList.remove('streaming');
+      const errEl = document.createElement('div');
+      errEl.className = 'error-inline';
+      errEl.textContent = 'connection dropped: ' + err.message;
+      msgEl.append(errEl);
+    } else {
+      setSystemLine('network: ' + err.message);
+    }
   } finally {
     $send.disabled = false;
     $input.focus();

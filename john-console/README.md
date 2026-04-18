@@ -47,6 +47,14 @@ Every chat turn:
 - Session cookie scoped to the contractor's `system_id` so every /chat POST carries their scoped AILedger key, not a shared one.
 - Pre-launch blockers captured in follow-up bead: DNS provisioning, Resend/Brevo sender config, session-store (Cloudflare KV), rate-limit per session.
 
+## Streaming
+
+`POST /chat` returns `Content-Type: text/event-stream` by default and forwards Anthropic's SSE events from the AILedger proxy straight to the browser. The client uses `fetch` + `ReadableStream` to render `content_block_delta` chunks as they arrive.
+
+If the proxy buffers the upstream response (current behavior per the benchmark plan), tokens arrive in a single late burst — the UI still renders incrementally from that point. If/when the proxy forwards the stream live, TTFT improves with zero client change.
+
+**Kill-switch:** set the `STREAMING_DISABLED=1` env var on the worker (`wrangler secret put` or `[vars]` in wrangler config) to force the buffered JSON path. Clients can also opt out per-request with `{ "stream": false }` in the POST body (useful for curl / tests).
+
 ## Deploy (when ready)
 
 ```
@@ -59,7 +67,7 @@ wrangler deploy
 ## Non-goals (MVP)
 
 - No message history persistence (each page load is a fresh conversation). KV-backed persistence is a follow-up.
-- No streaming responses. Just request-response for the first cut; SSE upgrade when UI needs it.
+- ~~No streaming responses.~~ SSE streaming enabled by default (see "Streaming" below).
 - No CRM / Apollo / Brevo integration from the UI. John can recommend actions, contractor takes them in the respective SaaS tab.
 - No attachments / file upload. Text-in, text-out.
 
