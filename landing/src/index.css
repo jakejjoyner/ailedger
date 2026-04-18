@@ -16,21 +16,94 @@ body {
 
 /* Staggered hero fade-in on load */
 @keyframes heroFadeIn {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 .fade-in {
   opacity: 0;
-  animation: heroFadeIn 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation: heroFadeIn 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
-.fade-1 { animation-delay: 0.05s; }
-.fade-2 { animation-delay: 0.20s; }
-.fade-3 { animation-delay: 0.45s; }
-.fade-4 { animation-delay: 0.70s; }
+.fade-1  { animation-delay: 0.05s; }
+.fade-2a { animation-delay: 0.18s; }
+.fade-2b { animation-delay: 0.30s; }
+.fade-2  { animation-delay: 0.20s; } /* legacy: retained for safety */
+.fade-3  { animation-delay: 0.48s; }
+.fade-4  { animation-delay: 0.68s; }
+
+/* Skip the entry animation on second+ renders in a session (Hero sets .no-anim) */
+.fade-in.no-anim { animation: none; opacity: 1; transform: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .fade-in { animation: none; opacity: 1; }
+}
+
+/* Hero title — balance line breaks so we don't get orphans on narrow viewports */
+.hero-title,
+.hero-subtitle {
+  text-wrap: balance;
+}
+.hero-title-line,
+.hero-title-accent {
+  display: inline-block;
+}
+
+/* Hero eyebrow pill */
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  border-radius: 999px;
+  padding: 5px 14px 5px 12px;
+  margin-bottom: 36px;
+  letter-spacing: 0.005em;
+}
+.hero-eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #818cf8;
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.18);
+  animation: eyebrowPulse 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes eyebrowPulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.18); }
+  50%      { box-shadow: 0 0 0 5px rgba(129, 140, 248, 0.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-eyebrow-dot { animation: none; }
+}
+
+/* Hero CTAs — hover/focus states (the inline styles set the base) */
+.hero-cta-primary {
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 8px 24px -12px rgba(79, 70, 229, 0.6);
+}
+.hero-cta-primary:hover {
+  background: #4338ca !important;
+  transform: translateY(-1px);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 12px 28px -12px rgba(79, 70, 229, 0.7);
+}
+.hero-cta-primary:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 3px;
+}
+.hero-cta-secondary {
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+.hero-cta-secondary:hover {
+  color: #e2e8f0 !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  background: rgba(255, 255, 255, 0.02);
+}
+.hero-cta-secondary:focus-visible {
+  outline: 2px solid rgba(129, 140, 248, 0.6);
+  outline-offset: 3px;
 }
 
 /* Hamburger menu animation */
