@@ -50,4 +50,7 @@ test_proxy.py
 /.runtime/
 /.beads/
 /.claude/
+/.logs/
+/state.json
 /CLAUDE.md
+/CLAUDE.local.md
