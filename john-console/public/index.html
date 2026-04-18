@@ -41,8 +41,12 @@
   .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
   .brand-name { font-weight: 600; font-size: 14px; color: var(--fg-0); letter-spacing: -0.01em; }
   .brand-sub { font-size: 11px; color: var(--fg-2); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.02em; }
+  .header-actions { display: flex; align-items: center; gap: 14px; }
   .status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fg-2); font-family: 'JetBrains Mono', monospace; }
   .pulse { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); animation: pulse 2s var(--ease) infinite; }
+  button.ghost { background: transparent; color: var(--fg-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 11px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.02em; cursor: pointer; transition: all 0.15s var(--ease); }
+  button.ghost:hover { color: var(--fg-0); border-color: var(--border-hi); background: var(--bg-1); }
+  button.ghost:disabled { opacity: 0.35; cursor: not-allowed; }
   @keyframes pulse {
     0%   { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.5); }
     70%  { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
@@ -104,9 +108,12 @@
       <div class="brand-sub">sales-console · v0.1</div>
     </div>
   </div>
-  <div class="status">
-    <div class="pulse"></div>
-    <span>connected</span>
+  <div class="header-actions">
+    <button class="ghost" id="newSession" type="button" title="Clear history and start fresh">new session</button>
+    <div class="status">
+      <div class="pulse"></div>
+      <span>connected</span>
+    </div>
   </div>
 </header>
 <div id="messages"></div>
@@ -126,6 +133,7 @@ const $messages = document.getElementById('messages');
 const $input = document.getElementById('input');
 const $send = document.getElementById('send');
 const $form = document.getElementById('composer');
+const $newSession = document.getElementById('newSession');
 
 function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 // Minimal markdown → HTML for John's replies
@@ -181,8 +189,9 @@ $input.addEventListener('input', () => {
   $input.style.height = Math.min($input.scrollHeight, 200) + 'px';
 });
 
-// Stable per-browser session id. Persists across reloads so the greeting (cached
-// server-side under this id) shows up once instead of regenerating every visit.
+// Stable per-browser session id for the greeting cache (ai-9qy). Separate from
+// the httpOnly jc_session cookie used for /chat history (ai-b4q) — the former
+// keys the opener, the latter keys conversation turns.
 function getSessionId() {
   const KEY = 'john-session-id';
   let id = localStorage.getItem(KEY);
@@ -199,9 +208,7 @@ function getContractorParam() {
   return /^[A-Za-z][A-Za-z0-9_.-]{0,31}$/.test(p) ? p : null;
 }
 
-async function openSession() {
-  $input.disabled = true;
-  $send.disabled = true;
+async function fetchGreeting() {
   const typingEl = showTyping();
   try {
     const r = await fetch('/greeting', {
@@ -213,19 +220,60 @@ async function openSession() {
     typingEl.remove();
     if (!r.ok || !data.content) {
       setSystemLine('session ready · type below to begin');
-    } else {
-      renderMessage('john', data.content);
-      history.push({ role: 'assistant', content: data.content });
+      return;
     }
+    renderMessage('john', data.content);
+    history.push({ role: 'assistant', content: data.content });
   } catch (err) {
     typingEl.remove();
     setSystemLine('session ready · type below to begin');
+  }
+}
+
+async function bootSession() {
+  $input.disabled = true;
+  $send.disabled = true;
+  try {
+    const r = await fetch('/session', { credentials: 'same-origin' });
+    if (r.ok) {
+      const data = await r.json();
+      const msgs = Array.isArray(data.messages) ? data.messages : [];
+      if (msgs.length > 0) {
+        setSystemLine('resumed · ' + msgs.length + ' message' + (msgs.length === 1 ? '' : 's'));
+        for (const m of msgs) {
+          const role = m.role === 'assistant' ? 'john' : 'user';
+          renderMessage(role, m.content || '');
+          history.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content || '' });
+        }
+        return;
+      }
+    }
+    // No prior history — John opens with a warm greeting.
+    await fetchGreeting();
+  } catch (err) {
+    await fetchGreeting();
   } finally {
     $input.disabled = false;
     $send.disabled = false;
     $input.focus();
   }
 }
+
+$newSession.addEventListener('click', async () => {
+  if (history.length > 0 && !confirm('Clear this conversation and start a new session?')) return;
+  $newSession.disabled = true;
+  try {
+    await fetch('/session/new', { method: 'POST', credentials: 'same-origin' });
+  } catch (err) {
+    // best-effort; even if the server didn't acknowledge, blow away local state
+  }
+  history.length = 0;
+  $messages.innerHTML = '';
+  await fetchGreeting();
+  $newSession.disabled = false;
+  $input.focus();
+});
+
 
 $form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -241,6 +289,7 @@ $form.addEventListener('submit', async (e) => {
   try {
     const r = await fetch('/chat', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: history }),
     });
@@ -257,7 +306,7 @@ $form.addEventListener('submit', async (e) => {
   }
 });
 
-openSession();
+bootSession();
 </script>
 </body>
 </html>
