@@ -1,8 +1,8 @@
 User-agent: *
 Allow: /
 
-# Inference-time LLM crawlers — ALLOWED (so ChatGPT, Claude, Perplexity
-# can answer user questions about AILedger using current content)
+# Inference-time LLM crawlers — ALLOWED (so ChatGPT/Claude/Perplexity
+# can answer user questions about AILedger with current content)
 User-agent: ClaudeBot
 Allow: /
 
@@ -24,11 +24,7 @@ Allow: /
 User-agent: ChatGPT-User
 Allow: /
 
-User-agent: meta-externalagent
-Allow: /
-
-# Training-scale crawlers — DECLINE pending Jake's explicit opt-in.
-# Flip to Allow / on launch-positioning review.
+# Training-scale crawlers — DECLINED (Jake policy 2026-04-18)
 User-agent: CCBot
 Disallow: /
 
@@ -37,5 +33,15 @@ Disallow: /
 
 User-agent: Bytespider
 Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+# Content-Signal (new-protocol)
+# search: indexing for search engines            — yes
+# ai-input: real-time retrieval for AI answers   — yes
+# ai-train: training AI models                   — no
+User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 
 Sitemap: https://ailedger.dev/sitemap.xml
