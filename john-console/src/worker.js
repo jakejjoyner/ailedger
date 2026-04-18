@@ -67,18 +67,26 @@ async function handleChat(request, env) {
     })),
   };
 
-  const upstream = await fetch('https://proxy.ailedger.dev/proxy/anthropic/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
-      'x-ailedger-key': env.AILEDGER_KEY,
-      'x-api-key': env.ANTHROPIC_API_KEY,
-    },
-    body: JSON.stringify(upstreamBody),
-  });
+  let upstream;
+  try {
+    upstream = await fetch('https://proxy.ailedger.dev/proxy/anthropic/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+        'x-ailedger-key': env.AILEDGER_KEY,
+        'x-api-key': env.ANTHROPIC_API_KEY,
+      },
+      body: JSON.stringify(upstreamBody),
+    });
+  } catch (err) {
+    // Couldn't reach the proxy at all — surface as 502 so the client's 5xx
+    // auto-retry path kicks in.
+    return json({ error: 'proxy unreachable: ' + (err?.message || 'network error') }, 502);
+  }
 
-  const data = await upstream.json();
+  let data;
+  try { data = await upstream.json(); } catch { data = {}; }
   if (!upstream.ok) {
     return json({ error: data?.error?.message || 'upstream error', status: upstream.status }, upstream.status);
   }

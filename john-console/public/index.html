@@ -93,6 +93,20 @@
   button.send:disabled { opacity: 0.4; cursor: not-allowed; }
   .hint { text-align: center; font-size: 11px; color: var(--fg-3); margin-top: 10px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.02em; }
   kbd { background: var(--bg-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--fg-1); }
+
+  /* Banner — persistent top-of-page advisory (offline, unsupported browser) */
+  #banner { display: none; padding: 10px 22px; font-size: 13px; line-height: 1.4; text-align: center; border-bottom: 1px solid; font-family: 'Inter', sans-serif; }
+  #banner.show { display: block; animation: slideDown 0.3s var(--ease); }
+  #banner.warn { background: rgba(251, 191, 36, 0.08); color: #fcd34d; border-color: rgba(251, 191, 36, 0.25); }
+  #banner.info { background: rgba(94, 234, 212, 0.06); color: var(--accent-hi); border-color: rgba(94, 234, 212, 0.18); }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* System line with inline action button (session expired) */
+  .msg.system .linklike { margin-left: 8px; background: transparent; border: 1px solid var(--border-hi); color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 2px 10px; border-radius: 6px; cursor: pointer; font-style: normal; transition: background 0.15s var(--ease); }
+  .msg.system .linklike:hover { background: rgba(94, 234, 212, 0.1); }
 </style>
 </head>
 <body>
@@ -109,6 +123,7 @@
     <span>connected</span>
   </div>
 </header>
+<div id="banner" role="status" aria-live="polite"></div>
 <div id="messages">
   <div class="msg system">New session · type below to begin</div>
 </div>
@@ -128,6 +143,24 @@ const $messages = document.getElementById('messages');
 const $input = document.getElementById('input');
 const $send = document.getElementById('send');
 const $form = document.getElementById('composer');
+const $banner = document.getElementById('banner');
+
+const REQUEST_TIMEOUT_MS = 30_000;
+const RATE_LIMIT_COOLDOWN_S = 10;
+
+let sendLocked = false;      // 429 countdown / session-ended lockouts
+let offlineLock = false;     // toggled by online/offline events
+
+function setBanner(kind, text) {
+  // kind: 'warn' | 'info' | null (null hides)
+  if (!kind) { $banner.className = ''; $banner.textContent = ''; return; }
+  $banner.className = kind + ' show';
+  $banner.textContent = text;
+}
+
+function updateSendEnabled() {
+  $send.disabled = sendLocked || offlineLock;
+}
 
 function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 // Minimal markdown → HTML for John's replies
@@ -175,6 +208,73 @@ function setSystemLine(text) {
   return el;
 }
 
+function systemLineWithAction(text, actionLabel, onClick) {
+  const el = document.createElement('div');
+  el.className = 'msg system';
+  el.textContent = text;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'linklike';
+  btn.textContent = actionLabel;
+  btn.addEventListener('click', onClick);
+  el.append(btn);
+  $messages.append(el);
+  el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return el;
+}
+
+// POST /chat with a 30s abort + auto-retry on 5xx (once).
+async function postChat(messages, { retried = false, onRetry } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let r, data;
+  try {
+    r = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+  try { data = await r.json(); } catch { data = {}; }
+
+  if (r.status >= 500 && r.status < 600 && !retried) {
+    if (onRetry) onRetry();
+    return postChat(messages, { retried: true, onRetry });
+  }
+  return { ok: r.ok, status: r.status, data };
+}
+
+function startRateLimitCountdown(seconds) {
+  sendLocked = true;
+  updateSendEnabled();
+  const line = setSystemLine('John is busy — ' + seconds + 's please');
+  let remaining = seconds;
+  const tick = setInterval(() => {
+    remaining -= 1;
+    if (remaining <= 0) {
+      clearInterval(tick);
+      line.textContent = 'ready — send again';
+      sendLocked = false;
+      updateSendEnabled();
+      $input.focus();
+    } else {
+      line.textContent = 'John is busy — ' + remaining + 's please';
+    }
+  }, 1000);
+}
+
+function handleSessionExpired() {
+  sendLocked = true;
+  updateSendEnabled();
+  systemLineWithAction('Session ended — sign in again.', 'Sign in', () => {
+    // Auth flow owner (ai-6qf) decides the login path; /login is the conventional entry.
+    window.location.href = '/login';
+  });
+}
+
 $input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $form.requestSubmit(); }
 });
@@ -185,33 +285,86 @@ $input.addEventListener('input', () => {
 
 $form.addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (sendLocked || offlineLock) return;
   const text = $input.value.trim();
   if (!text) return;
   $input.value = '';
   $input.style.height = 'auto';
-  $send.disabled = true;
+  sendLocked = true;
+  updateSendEnabled();
   renderMessage('user', text);
   history.push({ role: 'user', content: text });
 
   const typingEl = showTyping();
+  let unlockAfter = true;
+  let retryLine = null;
   try {
-    const r = await fetch('/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: history }),
+    const { ok, status, data } = await postChat(history, {
+      onRetry: () => { retryLine = setSystemLine('Something on our side — retrying.'); },
     });
-    const data = await r.json();
     typingEl.remove();
-    if (!r.ok) setSystemLine('error: ' + (data.error || r.status));
-    else { renderMessage('john', data.content); history.push({ role: 'assistant', content: data.content }); }
+    if (retryLine) { retryLine.remove(); retryLine = null; }
+    if (ok) {
+      renderMessage('john', data.content);
+      history.push({ role: 'assistant', content: data.content });
+    } else if (status === 401 || status === 403) {
+      handleSessionExpired();
+      unlockAfter = false;
+    } else if (status === 429) {
+      startRateLimitCountdown(RATE_LIMIT_COOLDOWN_S);
+      unlockAfter = false;
+    } else if (status >= 500) {
+      // already auto-retried once inside postChat.
+      setSystemLine('Something on our side — try again in a moment.');
+    } else {
+      setSystemLine('error: ' + (data.error || status));
+    }
   } catch (err) {
     typingEl.remove();
-    setSystemLine('network: ' + err.message);
+    if (retryLine) { retryLine.remove(); retryLine = null; }
+    if (err.name === 'AbortError') {
+      setSystemLine('Ask again — that one got stuck.');
+    } else if (!navigator.onLine) {
+      setSystemLine('Offline — your message will need to be resent when you reconnect.');
+    } else {
+      setSystemLine('network: ' + err.message);
+    }
   } finally {
-    $send.disabled = false;
-    $input.focus();
+    if (unlockAfter) {
+      sendLocked = false;
+      updateSendEnabled();
+      $input.focus();
+    }
   }
 });
+
+// --- Ambient state: network + browser capability -----------------------------
+
+function reflectOnlineState() {
+  if (navigator.onLine) {
+    offlineLock = false;
+    // Only clear the banner if it's the offline one (don't stomp on webauthn warn).
+    if ($banner.dataset.kind === 'offline') setBanner(null);
+    updateSendEnabled();
+  } else {
+    offlineLock = true;
+    $banner.dataset.kind = 'offline';
+    setBanner('warn', "You're offline — waiting for your connection to come back.");
+    updateSendEnabled();
+  }
+}
+window.addEventListener('online', reflectOnlineState);
+window.addEventListener('offline', reflectOnlineState);
+reflectOnlineState();
+
+// WebAuthn / passkey support detection — only surface if offline isn't already
+// occupying the banner, and only on browsers that clearly can't do passkeys.
+if (!navigator.onLine) {
+  // offline banner wins
+} else if (typeof window.PublicKeyCredential === 'undefined') {
+  $banner.dataset.kind = 'webauthn';
+  setBanner('warn', "Your browser doesn't support passkeys — use the email sign-in link instead.");
+}
 </script>
 </body>
 </html>
