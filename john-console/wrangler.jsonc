@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "john-console",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-04-18",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "workers_dev": true,
+
+  // Custom domain activation: uncomment once DNS for sales.ailedger.dev is provisioned.
+  // "routes": [
+  //   { "pattern": "sales.ailedger.dev", "custom_domain": true }
+  // ],
+
+  // Secrets set via `wrangler secret put`:
+  //   AILEDGER_KEY       — alg_sk_* dogfood key
+  //   ANTHROPIC_API_KEY  — Jake's Anthropic key (sk-ant-*)
+  "placement": { "mode": "smart" }
+}
