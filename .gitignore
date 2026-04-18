@@ -54,3 +54,6 @@ test_proxy.py
 /state.json
 /CLAUDE.md
 /CLAUDE.local.md
+
+# Python editable-install artifacts
+*.egg-info/
