@@ -21,6 +21,12 @@ export interface Env {
 	RESEND_API_KEY: string;
 	SUPABASE_HOOK_SECRET: string;
 	AILEDGER_CACHE: KVNamespace;
+	// Comma-separated list of sk-ant-* keys. If set, Anthropic requests
+	// rotate through the pool on 429, marking exhausted keys in KV for 60 min.
+	// If unset, falls through to ANTHROPIC_API_KEY single-key legacy mode.
+	ANTHROPIC_KEY_POOL?: string;
+	// Single-key legacy override used only when ANTHROPIC_KEY_POOL is unset.
+	ANTHROPIC_API_KEY?: string;
 }
 
 // Supported upstream providers
@@ -29,6 +35,10 @@ const PROVIDERS: Record<string, string> = {
 	anthropic: 'https://api.anthropic.com',
 	gemini: 'https://generativelanguage.googleapis.com',
 };
+
+// How long to treat an Anthropic pool key as exhausted after a 429, in seconds.
+const ANTHROPIC_KEY_EXHAUSTED_TTL_S = 60 * 60;
+const ANTHROPIC_KEY_EXHAUSTED_KV_PREFIX = 'anthropic_pool:exhausted:';
 
 export default {
 	async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
@@ -125,14 +135,96 @@ export default {
 			'x-stainless-runtime', 'x-stainless-runtime-version', 'x-stainless-os', 'x-stainless-arch',
 		]);
 
+		const startedAt = new Date().toISOString();
+		const startMs = Date.now();
+
+		// Anthropic multi-key pool: rotate through ANTHROPIC_KEY_POOL on 429.
+		// Falls through to ANTHROPIC_API_KEY single-key mode, or to client-provided
+		// headers (legacy) if neither is configured.
+		const pool = parseAnthropicKeyPool(env);
+		if (providerKey === 'anthropic' && pool.length > 0) {
+			const poolResult = await fetchAnthropicWithPool({
+				env,
+				pool,
+				upstreamUrl,
+				method: request.method,
+				baseHeaders: forwardHeaders,
+				body: requestBody,
+			});
+			const latencyMs = Date.now() - startMs;
+			const completedAt = new Date().toISOString();
+
+			if (poolResult.kind === 'exhausted') {
+				// All keys exhausted — do NOT forward to upstream. Return 503 to client.
+				const retryAfter = Math.max(1, poolResult.earliestExpirySeconds - Math.floor(Date.now() / 1000));
+				console.error(JSON.stringify({
+					event: 'anthropic_pool_exhausted',
+					pool_size: pool.length,
+					retry_after_seconds: retryAfter,
+					path: upstreamPath,
+					customer_id: customerId,
+				}));
+				const body503 = JSON.stringify({ error: 'quota_pool_exhausted', retry_after: retryAfter });
+				const body503Bytes = new TextEncoder().encode(body503);
+				const body503Buf = new ArrayBuffer(body503Bytes.byteLength);
+				new Uint8Array(body503Buf).set(body503Bytes);
+				ctx.waitUntil(
+					logInference({
+						env, provider: providerKey, method: request.method, path: upstreamPath,
+						requestBody, requestContentType,
+						responseBody: body503Buf, responseContentType: 'application/json',
+						statusCode: 503, latencyMs, startedAt, completedAt,
+						customerId, systemId, upstreamKeyIndex: null,
+					})
+				);
+				return new Response(body503, {
+					status: 503,
+					headers: {
+						'Content-Type': 'application/json',
+						'Retry-After': String(retryAfter),
+					},
+				});
+			}
+
+			const { response: upstreamResponse, keyIndex, rotations } = poolResult;
+			const responseBody = await upstreamResponse.arrayBuffer();
+			const responseContentType = upstreamResponse.headers.get('content-type');
+			if (rotations > 0) {
+				console.log(JSON.stringify({
+					event: 'anthropic_pool_rotation',
+					rotations,
+					final_key_index: keyIndex,
+					final_status: upstreamResponse.status,
+				}));
+			}
+			ctx.waitUntil(
+				logInference({
+					env, provider: providerKey, method: request.method, path: upstreamPath,
+					requestBody, requestContentType,
+					responseBody, responseContentType,
+					statusCode: upstreamResponse.status, latencyMs, startedAt, completedAt,
+					customerId, systemId, upstreamKeyIndex: keyIndex,
+				})
+			);
+			return new Response(responseBody, {
+				status: upstreamResponse.status,
+				statusText: upstreamResponse.statusText,
+				headers: upstreamResponse.headers,
+			});
+		}
+
+		// Single-key legacy: inject ANTHROPIC_API_KEY if set, otherwise pass through.
+		if (providerKey === 'anthropic' && env.ANTHROPIC_API_KEY) {
+			forwardHeaders.delete('authorization');
+			forwardHeaders.set('x-api-key', env.ANTHROPIC_API_KEY);
+		}
+
 		const upstreamRequest = new Request(upstreamUrl, {
 			method: request.method,
 			headers: forwardHeaders,
 			body: requestBody,
 		});
 
-		const startedAt = new Date().toISOString();
-		const startMs = Date.now();
 		const upstreamResponse = await fetch(upstreamRequest);
 		const latencyMs = Date.now() - startMs;
 		const completedAt = new Date().toISOString();
@@ -436,6 +528,103 @@ async function upsertSubscription(
 		const body = await res.text();
 		console.error(`Subscription upsert failed: ${res.status} ${body}`);
 	}
+}
+
+// ─── Anthropic multi-key pool ───────────────────────────────────────────────
+
+export function parseAnthropicKeyPool(env: Env): string[] {
+	if (!env.ANTHROPIC_KEY_POOL) return [];
+	return env.ANTHROPIC_KEY_POOL.split(',').map((k) => k.trim()).filter(Boolean);
+}
+
+// Returns exhaustion expiry (epoch seconds) for each pool index, or null if active.
+async function readPoolExhaustion(env: Env, count: number): Promise<(number | null)[]> {
+	const out = await Promise.all(
+		Array.from({ length: count }, (_, i) =>
+			env.AILEDGER_CACHE.get(`${ANTHROPIC_KEY_EXHAUSTED_KV_PREFIX}${i}`)
+		)
+	);
+	return out.map((v) => (v ? parseInt(v, 10) : null));
+}
+
+async function markPoolKeyExhausted(env: Env, index: number): Promise<number> {
+	const expiresAt = Math.floor(Date.now() / 1000) + ANTHROPIC_KEY_EXHAUSTED_TTL_S;
+	await env.AILEDGER_CACHE.put(
+		`${ANTHROPIC_KEY_EXHAUSTED_KV_PREFIX}${index}`,
+		String(expiresAt),
+		{ expirationTtl: ANTHROPIC_KEY_EXHAUSTED_TTL_S }
+	);
+	return expiresAt;
+}
+
+type PoolFetchResult =
+	| { kind: 'ok'; response: Response; keyIndex: number; rotations: number }
+	| { kind: 'exhausted'; earliestExpirySeconds: number };
+
+// Try each non-exhausted pool key in order. On 429, mark exhausted (60 min) and
+// fall through to the next. Returns the first non-429 response (including
+// upstream errors other than 429) or 'exhausted' if every key is unavailable.
+export async function fetchAnthropicWithPool(args: {
+	env: Env;
+	pool: string[];
+	upstreamUrl: string;
+	method: string;
+	baseHeaders: Headers;
+	body: ArrayBuffer | null;
+}): Promise<PoolFetchResult> {
+	const { env, pool, upstreamUrl, method, baseHeaders, body } = args;
+	const exhaustion = await readPoolExhaustion(env, pool.length);
+
+	const candidates: number[] = [];
+	for (let i = 0; i < pool.length; i++) {
+		if (exhaustion[i] === null) candidates.push(i);
+	}
+
+	if (candidates.length === 0) {
+		const earliest = exhaustion.reduce<number>((min, v) => {
+			if (v === null) return min;
+			return min === 0 ? v : Math.min(min, v);
+		}, 0);
+		return { kind: 'exhausted', earliestExpirySeconds: earliest };
+	}
+
+	let rotations = 0;
+	let lastResponse: Response | null = null;
+	let lastIndex = -1;
+
+	for (const index of candidates) {
+		const headers = new Headers(baseHeaders);
+		headers.delete('authorization');
+		headers.set('x-api-key', pool[index]);
+
+		const req = new Request(upstreamUrl, {
+			method,
+			headers,
+			body: body ? body.slice(0) : null,
+		});
+		const res = await fetch(req);
+
+		if (res.status !== 429) {
+			return { kind: 'ok', response: res, keyIndex: index, rotations };
+		}
+
+		await markPoolKeyExhausted(env, index);
+		rotations++;
+		lastResponse = res;
+		lastIndex = index;
+	}
+
+	// Every candidate returned 429. The pool is dry right now; return exhausted
+	// so the caller emits a 503 rather than propagating a 429 to the client.
+	// We consumed the response body via fetch; ok for lastResponse not to be returned.
+	void lastResponse;
+	void lastIndex;
+	const freshExhaustion = await readPoolExhaustion(env, pool.length);
+	const earliest = freshExhaustion.reduce<number>((min, v) => {
+		if (v === null) return min;
+		return min === 0 ? v : Math.min(min, v);
+	}, 0);
+	return { kind: 'exhausted', earliestExpirySeconds: earliest };
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -945,6 +1134,7 @@ async function logInference({
 	completedAt,
 	customerId,
 	systemId,
+	upstreamKeyIndex,
 }: {
 	env: Env;
 	provider: string;
@@ -960,6 +1150,7 @@ async function logInference({
 	completedAt: string;
 	customerId: string;
 	systemId: string | null;
+	upstreamKeyIndex?: number | null;
 }): Promise<void> {
 	const [inputHash, outputHash] = await Promise.all([
 		sha256jcs(requestBody, requestContentType),
@@ -985,7 +1176,7 @@ async function logInference({
 	// trigger (migrations/20260418_tamper_evident_chain.sql). Computing the
 	// hash worker-side would race under concurrent inserts for the same
 	// customer; the trigger serializes via a per-customer advisory lock.
-	const entry = {
+	const entry: Record<string, unknown> = {
 		customer_id: customerId,
 		system_id: systemId,
 		provider,
@@ -1000,6 +1191,9 @@ async function logInference({
 		completed_at: completedAt,
 		logged_at: new Date().toISOString(),
 	};
+	if (upstreamKeyIndex !== undefined && upstreamKeyIndex !== null) {
+		entry.upstream_key_index = upstreamKeyIndex;
+	}
 
 	const res = await fetch(`${env.SUPABASE_URL}/rest/v1/inference_logs`, {
 		method: 'POST',
