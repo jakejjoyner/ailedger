@@ -4,6 +4,7 @@
  * Cloudflare Worker backing sales.ailedger.dev:
  *   GET  /            → static index.html
  *   POST /chat        → forwards to AILedger proxy → Anthropic
+ *   POST /greeting    → John opens the session (KV-cached per session_id)
  *
  * Inference path: this worker → proxy.ailedger.dev/proxy/anthropic → api.anthropic.com.
  * Every call is logged to the AILedger dogfood tenant (first real external-shape
@@ -36,6 +37,82 @@ If Pasha asks to do outreach before the dry-run: decline, cite the welcome doc's
 
 # First session
 When Pasha sends his first message, greet him by name if identified, acknowledge he's just onboarded, ask what he wants to look at first (ICP targets / outreach drafts / CRM setup / week plan), and let him drive. Don't lecture — he's read the welcome doc.`;
+
+// Per-session greeting: John opens the conversation so Pasha lands on a warm
+// session instead of a blank slate. Cached in KV so a reload doesn't re-greet.
+// One Haiku call per new session — acceptable MVP cost (see ai-9qy).
+async function handleGreeting(request, env) {
+  if (request.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 });
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return json({ error: 'invalid JSON' }, 400);
+  }
+
+  const sessionId = String(body.session_id || '');
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(sessionId)) {
+    return json({ error: 'session_id must be 8-128 chars of [A-Za-z0-9_-]' }, 400);
+  }
+
+  const kv = env.SESSION_KV;
+  if (kv) {
+    const cached = await kv.get(`greeting:${sessionId}`);
+    if (cached) {
+      return json({ content: cached, cached: true });
+    }
+  }
+
+  if (!env.AILEDGER_KEY || !env.ANTHROPIC_API_KEY) {
+    return json({ error: 'worker not configured (missing AILEDGER_KEY or ANTHROPIC_API_KEY)' }, 500);
+  }
+
+  const rawContractor = String(body.contractor || '').trim();
+  const contractorName = /^[A-Za-z][A-Za-z0-9_.-]{0,31}$/.test(rawContractor)
+    ? rawContractor.charAt(0).toUpperCase() + rawContractor.slice(1).toLowerCase()
+    : null;
+
+  const namePart = contractorName
+    ? `The contractor's name is ${contractorName} — greet him by name.`
+    : `You don't have the contractor's name — open warmly without using one.`;
+
+  const openerInstruction = `This is the very first message of the session. ${namePart} Acknowledge briefly that they've just onboarded, then ask what they want to look at first and propose 2–3 concrete options from: ICP targets, outreach drafts, CRM setup, this week's plan. Keep it to 2–4 short sentences. No lecturing — they've read the welcome doc.`;
+
+  const upstreamBody = {
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 400,
+    system: JOHN_PERSONA,
+    messages: [{ role: 'user', content: openerInstruction }],
+  };
+
+  const upstream = await fetch('https://proxy.ailedger.dev/proxy/anthropic/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01',
+      'x-ailedger-key': env.AILEDGER_KEY,
+      'x-api-key': env.ANTHROPIC_API_KEY,
+    },
+    body: JSON.stringify(upstreamBody),
+  });
+
+  const data = await upstream.json();
+  if (!upstream.ok) {
+    return json({ error: data?.error?.message || 'upstream error', status: upstream.status }, upstream.status);
+  }
+
+  const content = (data?.content || []).map(block => block?.text || '').join('').trim();
+
+  if (kv && content) {
+    // 30 days — long enough that Pasha's next login doesn't re-greet.
+    await kv.put(`greeting:${sessionId}`, content, { expirationTtl: 60 * 60 * 24 * 30 });
+  }
+
+  return json({ content, cached: false });
+}
 
 async function handleChat(request, env) {
   if (request.method !== 'POST') {
@@ -100,6 +177,10 @@ export default {
 
     if (url.pathname === '/chat') {
       return handleChat(request, env);
+    }
+
+    if (url.pathname === '/greeting') {
+      return handleGreeting(request, env);
     }
 
     // Everything else: fall through to the static asset binding (index.html, etc.)

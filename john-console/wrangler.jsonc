@@ -20,5 +20,10 @@
   // Secrets set via `wrangler secret put`:
   //   AILEDGER_KEY       — alg_sk_* dogfood key
   //   ANTHROPIC_API_KEY  — Jake's Anthropic key (sk-ant-*)
-  "placement": { "mode": "smart" }
+  "placement": { "mode": "smart" },
+
+  // Per-session state (greeting cache today; conversation history later).
+  "kv_namespaces": [
+    { "binding": "SESSION_KV", "id": "801ecc0deebc4384b8417441071050c1" }
+  ]
 }

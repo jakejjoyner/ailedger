@@ -109,9 +109,7 @@
     <span>connected</span>
   </div>
 </header>
-<div id="messages">
-  <div class="msg system">New session · type below to begin</div>
-</div>
+<div id="messages"></div>
 <div class="composer-wrap">
   <form id="composer" autocomplete="off">
     <textarea id="input" placeholder="Message John…" rows="1" autofocus></textarea>
@@ -183,6 +181,52 @@ $input.addEventListener('input', () => {
   $input.style.height = Math.min($input.scrollHeight, 200) + 'px';
 });
 
+// Stable per-browser session id. Persists across reloads so the greeting (cached
+// server-side under this id) shows up once instead of regenerating every visit.
+function getSessionId() {
+  const KEY = 'john-session-id';
+  let id = localStorage.getItem(KEY);
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random().toString(36).slice(2, 10));
+    localStorage.setItem(KEY, id);
+  }
+  return id;
+}
+
+function getContractorParam() {
+  const p = new URL(window.location.href).searchParams.get('contractor');
+  if (!p) return null;
+  return /^[A-Za-z][A-Za-z0-9_.-]{0,31}$/.test(p) ? p : null;
+}
+
+async function openSession() {
+  $input.disabled = true;
+  $send.disabled = true;
+  const typingEl = showTyping();
+  try {
+    const r = await fetch('/greeting', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: getSessionId(), contractor: getContractorParam() }),
+    });
+    const data = await r.json();
+    typingEl.remove();
+    if (!r.ok || !data.content) {
+      setSystemLine('session ready · type below to begin');
+    } else {
+      renderMessage('john', data.content);
+      history.push({ role: 'assistant', content: data.content });
+    }
+  } catch (err) {
+    typingEl.remove();
+    setSystemLine('session ready · type below to begin');
+  } finally {
+    $input.disabled = false;
+    $send.disabled = false;
+    $input.focus();
+  }
+}
+
 $form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = $input.value.trim();
@@ -212,6 +256,8 @@ $form.addEventListener('submit', async (e) => {
     $input.focus();
   }
 });
+
+openSession();
 </script>
 </body>
 </html>
