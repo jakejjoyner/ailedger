@@ -186,7 +186,7 @@ export default function Billing() {
                 <button
                   onClick={() => checkout(priceKey)}
                   disabled={isLoading || isCurrent}
-                  style={{ cursor: isCurrent ? 'default' : 'pointer' }}
+                  style={{ cursor: 'default' }}
                   className={`w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                     isCurrent
                       ? 'bg-slate-800/60 text-slate-300 border border-slate-600'

@@ -40,7 +40,7 @@ export default function ReportGenerator({ customerId, customerEmail, onUpgrade }
         )}
         <button
           onClick={() => setShowUpgradeModal(true)}
-          style={{ cursor: 'pointer' }}
+          style={{ cursor: 'default' }}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white text-xs font-medium rounded-lg transition-colors"
         >
           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
