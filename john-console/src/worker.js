@@ -3,17 +3,24 @@
  *
  * Cloudflare Worker backing sales.ailedger.dev:
  *   GET  /            → static index.html
- *   POST /chat        → forwards to AILedger proxy → Anthropic
+ *   GET  /session     → { messages, sessionId } for the current cookie (empty if none)
+ *   POST /session/new → clear existing session (cookie + KV entry)
+ *   POST /chat        → forwards to AILedger proxy → Anthropic; persists turn to KV
  *
  * Inference path: this worker → proxy.ailedger.dev/proxy/anthropic → api.anthropic.com.
  * Every call is logged to the AILedger dogfood tenant (first real external-shape
  * customer traffic on the product we're selling — end-to-end dogfood).
  *
+ * Session persistence (ai-b4q):
+ *   - On first /chat, worker mints a UUID, sets httpOnly cookie, stores history in KV.
+ *   - TTL: 30 days rolling; each write refreshes expirationTtl.
+ *   - Cookie: Path=/, SameSite=Strict, Secure, HttpOnly, Max-Age=30d.
+ *
  * Secrets (set via `wrangler secret put`):
  *   AILEDGER_KEY       — dogfood tenant API key (alg_sk_*)
  *   ANTHROPIC_API_KEY  — Jake's Anthropic key (passed through proxy)
  *
- * TODO (pre-Pasha): mailbox SSO magic-link auth + session cookie + per-session AILedger key.
+ * TODO (pre-Pasha): mailbox SSO magic-link auth + per-session AILedger key.
  *
  * MVP has zero auth; suitable for Jake-local testing only.
  */
@@ -37,6 +44,64 @@ If Pasha asks to do outreach before the dry-run: decline, cite the welcome doc's
 # First session
 When Pasha sends his first message, greet him by name if identified, acknowledge he's just onboarded, ask what he wants to look at first (ICP targets / outreach drafts / CRM setup / week plan), and let him drive. Don't lecture — he's read the welcome doc.`;
 
+const SESSION_COOKIE = 'jc_session';
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+const MAX_STORED_MESSAGES = 200; // guard KV write size; ~3MB upper bound at 8kB/msg
+
+function parseCookie(header, name) {
+  if (!header) return null;
+  for (const part of header.split(';')) {
+    const [k, ...rest] = part.trim().split('=');
+    if (k === name) return rest.join('=');
+  }
+  return null;
+}
+
+function sessionCookie(id) {
+  return `${SESSION_COOKIE}=${id}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_TTL_SECONDS}`;
+}
+
+function clearedCookie() {
+  return `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`;
+}
+
+async function loadSession(env, id) {
+  if (!id) return null;
+  const raw = await env.SESSIONS.get(id);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.messages)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+async function saveSession(env, id, messages) {
+  const trimmed = messages.slice(-MAX_STORED_MESSAGES);
+  await env.SESSIONS.put(
+    id,
+    JSON.stringify({ messages: trimmed, updatedAt: Date.now() }),
+    { expirationTtl: SESSION_TTL_SECONDS },
+  );
+}
+
+async function handleGetSession(request, env) {
+  const id = parseCookie(request.headers.get('Cookie'), SESSION_COOKIE);
+  if (!id) return json({ sessionId: null, messages: [] });
+  const stored = await loadSession(env, id);
+  if (!stored) return json({ sessionId: null, messages: [] }, 200, { 'Set-Cookie': clearedCookie() });
+  return json({ sessionId: id, messages: stored.messages });
+}
+
+async function handleNewSession(request, env) {
+  if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
+  const id = parseCookie(request.headers.get('Cookie'), SESSION_COOKIE);
+  if (id) await env.SESSIONS.delete(id);
+  return json({ ok: true }, 200, { 'Set-Cookie': clearedCookie() });
+}
+
 async function handleChat(request, env) {
   if (request.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
@@ -57,14 +122,23 @@ async function handleChat(request, env) {
     return json({ error: 'worker not configured (missing AILEDGER_KEY or ANTHROPIC_API_KEY)' }, 500);
   }
 
+  let sessionId = parseCookie(request.headers.get('Cookie'), SESSION_COOKIE);
+  let minted = false;
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    minted = true;
+  }
+
+  const messages = body.messages.map(m => ({
+    role: m.role === 'assistant' ? 'assistant' : 'user',
+    content: String(m.content || '').slice(0, 8000),
+  }));
+
   const upstreamBody = {
     model: 'claude-sonnet-4-6',
     max_tokens: 2048,
     system: JOHN_PERSONA,
-    messages: body.messages.map(m => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: String(m.content || '').slice(0, 8000),
-    })),
+    messages,
   };
 
   const upstream = await fetch('https://proxy.ailedger.dev/proxy/anthropic/v1/messages', {
@@ -84,13 +158,23 @@ async function handleChat(request, env) {
   }
 
   const content = (data?.content || []).map(block => block?.text || '').join('').trim();
-  return json({ content });
+
+  const updated = [...messages, { role: 'assistant', content }];
+  try {
+    await saveSession(env, sessionId, updated);
+  } catch (err) {
+    // KV write failure shouldn't break the chat turn — log and continue.
+    console.error('session persist failed', err);
+  }
+
+  const extra = { 'Set-Cookie': sessionCookie(sessionId) };
+  return json({ content, sessionId, minted }, 200, extra);
 }
 
-function json(obj, status = 200) {
+function json(obj, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(obj), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...extraHeaders },
   });
 }
 
@@ -98,9 +182,9 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    if (url.pathname === '/chat') {
-      return handleChat(request, env);
-    }
+    if (url.pathname === '/chat') return handleChat(request, env);
+    if (url.pathname === '/session') return handleGetSession(request, env);
+    if (url.pathname === '/session/new') return handleNewSession(request, env);
 
     // Everything else: fall through to the static asset binding (index.html, etc.)
     return env.ASSETS.fetch(request);

@@ -47,10 +47,24 @@ Every chat turn:
 - Session cookie scoped to the contractor's `system_id` so every /chat POST carries their scoped AILedger key, not a shared one.
 - Pre-launch blockers captured in follow-up bead: DNS provisioning, Resend/Brevo sender config, session-store (Cloudflare KV), rate-limit per session.
 
+## Session persistence
+
+Conversation history survives page refresh via Cloudflare KV + an httpOnly session cookie.
+
+- First `/chat` POST: worker mints a session UUID, sets `jc_session` cookie (`HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=30d`), stores `{ messages, updatedAt }` in the `SESSIONS` KV namespace.
+- Each subsequent `/chat` POST rewrites the KV entry with `expirationTtl=30d` — rolling TTL, idle sessions expire 30 days after last activity.
+- `GET /session` → `{ sessionId, messages }`. The browser calls this on page load and rehydrates the conversation. Missing/stale cookie → empty response + cleared Set-Cookie.
+- `POST /session/new` deletes the KV entry and clears the cookie. UI triggers this from the "new session" button with a confirm dialog.
+
+Single-device only by design — multi-device sync is deferred until magic-link auth lands.
+
 ## Deploy (when ready)
 
 ```
 cd john-console
+# One-time: provision the KV namespace and paste its id into wrangler.jsonc.
+wrangler kv namespace create SESSIONS
+
 wrangler deploy
 # DNS: add CNAME sales.ailedger.dev → <worker-default-url>
 # Secrets: wrangler secret put AILEDGER_KEY; wrangler secret put ANTHROPIC_API_KEY
@@ -58,7 +72,6 @@ wrangler deploy
 
 ## Non-goals (MVP)
 
-- No message history persistence (each page load is a fresh conversation). KV-backed persistence is a follow-up.
 - No streaming responses. Just request-response for the first cut; SSE upgrade when UI needs it.
 - No CRM / Apollo / Brevo integration from the UI. John can recommend actions, contractor takes them in the respective SaaS tab.
 - No attachments / file upload. Text-in, text-out.
@@ -67,9 +80,8 @@ wrangler deploy
 
 1. DNS: `sales.ailedger.dev` → worker custom domain.
 2. Auth: mailbox SSO magic-link via Resend.
-3. Session storage: Cloudflare KV.
-4. Rate limiting per session.
-5. First-contact dry-run script (Jake + Pasha + John round-trip once).
+3. Rate limiting per session.
+4. First-contact dry-run script (Jake + Pasha + John round-trip once).
 
 ## Provenance
 
