@@ -1178,7 +1178,7 @@ function PricingPage() {
         'Proxy drop-in for Anthropic, OpenAI, and Google — swap your base URL, inherit auth, keep shipping.',
         'Chain of custody on every request/response (SHA-256 fingerprints; full chain verification ships alongside SOC 2 Type I, Q3 2026 target).',
         'Dashboard and `ailedger verify` CLI for on-demand chain verification.',
-        '6-month retention baseline.',
+        '6-month retention baseline for free plan.',
         'Single-tenant workspace, 2 seats, community support (docs + GitHub).',
         'Usage ceiling: 10k free / 100k on Pro / 1M on Scale; usage-based above.',
       ],

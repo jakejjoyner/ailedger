@@ -10,7 +10,7 @@
     "build:pasha": "vite build --mode pasha",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy:pasha": "npm run build:pasha && wrangler pages deploy ./dist --project-name contractor-dash-pasha"
+    "deploy:pasha": "npm run build:pasha && wrangler pages deploy ./dist --project-name pasha-dash"
   },
   "dependencies": {
     "@simplewebauthn/browser": "^10.0.0",
