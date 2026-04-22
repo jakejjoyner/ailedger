@@ -44,7 +44,56 @@
   //   wrangler secret put REFRESH_JWT_SECRET --env pasha
   //   wrangler secret put CONTRACTOR_ALLOWED_EMAILS --env pasha
   //   wrangler deploy --env pasha
+  //
+  // env.staging: shared staging target for CI "Deploy Workers → staging".
+  // Lives on workers.dev until staging.contractor.jvholdings.co is provisioned
+  // (see docs/staging-provisioning.md). Bindings do NOT inherit from the
+  // top-level; env.staging redeclares everything it needs.
+  //
+  // Staging secrets MUST be distinct from production and from any contractor env:
+  //   wrangler secret put SESSION_JWT_SECRET --env staging
+  //   wrangler secret put REFRESH_JWT_SECRET --env staging
+  //   wrangler secret put RESEND_API_KEY --env staging
+  //   wrangler secret put CONTRACTOR_ALLOWED_EMAILS --env staging
   "env": {
+    "staging": {
+      "name": "contractor-auth-staging",
+      "workers_dev": true,
+      // "routes": [
+      //   { "pattern": "staging.contractor.jvholdings.co", "custom_domain": true }
+      // ],
+      "vars": {
+        "CONTRACTOR_SLUG": "staging",
+        "CONTRACTOR_DISPLAY_NAME": "Contractor Auth (staging)",
+        "RP_ID": "contractor-auth-staging.workers.dev",
+        "RP_NAME": "Joyner Ventures (contractor staging)",
+        "RP_ORIGIN": "https://contractor-auth-staging.workers.dev",
+        "MAGIC_LINK_FROM": "no-reply-staging@jvholdings.co",
+        "MAGIC_LINK_REDIRECT_BASE": "https://contractor-auth-staging.workers.dev",
+        "SESSION_TTL_SECONDS": "900",
+        "REFRESH_TTL_SECONDS": "604800",
+        "MAGIC_LINK_TTL_SECONDS": "600",
+        "ALLOWED_RETURN_HOSTS": "contractor-auth-staging.workers.dev"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "contractor-auth-staging",
+          "database_id": "REPLACE_WITH_STAGING_D1_ID"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "AUTH_KV",
+          "id": "REPLACE_WITH_STAGING_AUTH_KV_ID"
+        }
+      ],
+      "assets": {
+        "directory": "./public",
+        "binding": "ASSETS"
+      },
+      "observability": { "enabled": true }
+    },
     "pasha": {
       "name": "contractor-auth-pasha",
       "vars": {
