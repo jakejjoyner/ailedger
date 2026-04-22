@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import os
 import sys
 from pathlib import Path
 
@@ -10,6 +11,16 @@ import click
 
 from ailedger_cli import __version__
 from ailedger_cli.api import FetchOptions, LedgerClient
+from ailedger_cli.attest import (
+    SERVICE_ROLE_ENV_VAR,
+    AttestClient,
+    AttestError,
+    compute,
+    get_backend,
+    publish,
+    resolve_backend_name,
+    verify,
+)
 from ailedger_cli.config import (
     API_KEY_ENV_VAR,
     ConfigError,
@@ -167,9 +178,7 @@ def verify_cmd(customer: str | None, since: str | None, until: str | None) -> No
     help="PDF output path.",
 )
 @click.option("--customer", metavar="UUID", help="Filter to a single customer_id.")
-def export_cmd(
-    from_: str, to: str, out: Path, customer: str | None
-) -> None:
+def export_cmd(from_: str, to: str, out: Path, customer: str | None) -> None:
     start = _parse_date(from_)
     end = _parse_date(to)
     if end < start:
@@ -192,7 +201,109 @@ def export_cmd(
     click.echo(f"wrote {len(rows)} rows → {path}")
 
 
+# -- attest --------------------------------------------------------------------
+# Operator tooling for the monthly public-blockchain anchor. Cross-customer
+# metadata, so every command here uses the service-role key (not the customer
+# api-key). See docs/attest.md.
+
+
+@cli.group("attest", help="Cross-customer chain-head anchoring (operator only).")
+def attest_group() -> None:
+    """Group wrapper — subcommands do the work."""
+
+
+@attest_group.command("compute", help="Compute the root hash across all customers (dry run).")
+def attest_compute_cmd() -> None:
+    client = _build_attest_client()
+    with client:
+        result = compute(client)
+    click.echo(f"root_hash      {result.root_hash}")
+    click.echo(f"customer_count {result.customer_count}")
+
+
+@attest_group.command("publish", help="Compute + publish via the configured backend.")
+@click.option(
+    "--backend",
+    metavar="NAME",
+    help=f"Override {SERVICE_ROLE_ENV_VAR[:-3]}ANCHOR_BACKEND. One of: mock, bitcoin-testnet, bitcoin.",
+)
+def attest_publish_cmd(backend: str | None) -> None:
+    backend_name = (backend or resolve_backend_name()).lower()
+    try:
+        anchor = get_backend(backend_name)
+    except AttestError as exc:
+        raise click.ClickException(str(exc)) from exc
+    client = _build_attest_client()
+    with client:
+        try:
+            attestation = publish(client, backend=anchor)
+        except AttestError as exc:
+            raise click.ClickException(str(exc)) from exc
+    click.echo(f"network        {attestation.anchor_network}")
+    click.echo(f"tx_id          {attestation.anchor_tx_id}")
+    click.echo(f"root_hash      {attestation.root_hash}")
+    click.echo(f"customer_count {attestation.customer_count}")
+    click.echo(f"anchored_at    {attestation.anchored_at.isoformat()}")
+
+
+@attest_group.command("verify", help="Fetch an attestation by tx id and re-verify it.")
+@click.argument("tx_id")
+@click.option("--network", metavar="NAME", help="Restrict lookup to a specific backend.")
+def attest_verify_cmd(tx_id: str, network: str | None) -> None:
+    client = _build_attest_client()
+    with client:
+        try:
+            result = verify(client, tx_id, network=network)
+        except AttestError as exc:
+            raise click.ClickException(str(exc)) from exc
+    if not result.ok:
+        click.echo(f"FAIL — {result.reason}")
+        sys.exit(2)
+    assert result.attestation is not None
+    click.echo(
+        f"OK — tx {tx_id} anchors root_hash "
+        f"{result.attestation.root_hash[:16]}… "
+        f"({result.attestation.customer_count} customers, "
+        f"{result.attestation.anchor_network})"
+    )
+
+
+@attest_group.command("list", help="List recent attestations.")
+@click.option("--limit", default=20, show_default=True, help="Max rows to print.")
+def attest_list_cmd(limit: int) -> None:
+    client = _build_attest_client()
+    with client:
+        rows = client.list_attestations(limit=limit)
+    if not rows:
+        click.echo("no attestations")
+        return
+    for row in rows:
+        tx = row.anchor_tx_id or "-"
+        click.echo(
+            f"{row.anchored_at.isoformat()}  {row.anchor_network:<15}  "
+            f"tx={tx[:16]}…  root={row.root_hash[:16]}…  "
+            f"customers={row.customer_count}"
+        )
+
+
 # -- helpers -------------------------------------------------------------------
+
+
+def _build_attest_client() -> AttestClient:
+    config = load_config()
+    base_url = config.get("base-url")
+    if not base_url:
+        raise click.ClickException(
+            "base-url not configured. Run: ailedger config --set base-url=<your-supabase-url>"
+        )
+    service_role_key = os.environ.get(SERVICE_ROLE_ENV_VAR)
+    if not service_role_key:
+        raise click.ClickException(
+            f"{SERVICE_ROLE_ENV_VAR} not set. Attest commands require the "
+            "Supabase service-role key — customer api-keys cannot read "
+            "cross-customer chain heads."
+        )
+    return AttestClient(base_url, service_role_key)
 
 
 def _build_client() -> LedgerClient:
@@ -214,9 +325,7 @@ def _parse_date(value: str) -> dt.date:
     try:
         return dt.date.fromisoformat(value)
     except ValueError as exc:
-        raise click.UsageError(
-            f"invalid date {value!r} — expected YYYY-MM-DD"
-        ) from exc
+        raise click.UsageError(f"invalid date {value!r} — expected YYYY-MM-DD") from exc
 
 
 def _end_of_day(value: dt.date) -> dt.datetime:
