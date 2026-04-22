@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { MessageSquareText } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Inbox from "../components/Inbox";
 import DocsList from "../components/DocsList";
 import MessageView from "../components/MessageView";
 import DocView from "../components/DocView";
+import JoChat from "../components/JoChat";
 import { config } from "../config";
 import { apiHealth } from "../lib/api";
 import type { SessionState } from "../lib/auth";
@@ -16,6 +18,7 @@ interface Props {
 
 export default function Home({ session, onLogout }: Props) {
   const [apiUp, setApiUp] = useState<boolean | null>(null);
+  const [joOpen, setJoOpen] = useState(false);
 
   useEffect(() => {
     apiHealth()
@@ -23,10 +26,24 @@ export default function Home({ session, onLogout }: Props) {
       .catch(() => setApiUp(false));
   }, []);
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const t = e.target as HTMLElement | null;
+      const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+      if (!typing && (e.key === "j" || e.key === "J")) {
+        e.preventDefault();
+        setJoOpen((v) => !v);
+      }
+      if (e.key === "Escape" && joOpen) setJoOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [joOpen]);
+
   return (
     <div className="flex h-full">
       <Sidebar session={session} onLogout={onLogout} apiUp={apiUp} />
-      <main className="flex-1 overflow-hidden bg-zinc-950">
+      <main className="flex-1 overflow-hidden bg-zinc-950 relative">
         <Routes>
           <Route index element={<InboxRoute />} />
           <Route path="inbox" element={<Inbox />} />
@@ -35,6 +52,14 @@ export default function Home({ session, onLogout }: Props) {
           <Route path="docs/:id" element={<DocView />} />
           <Route path="*" element={<Navigate replace to="" />} />
         </Routes>
+        <button
+          onClick={() => setJoOpen((v) => !v)}
+          title="Jo chat (press j)"
+          className="fixed right-6 bottom-6 h-12 w-12 rounded-full bg-blue-600 hover:bg-blue-500 shadow-lg flex items-center justify-center z-10"
+        >
+          <MessageSquareText className="w-5 h-5" />
+        </button>
+        <JoChat open={joOpen} onClose={() => setJoOpen(false)} />
       </main>
     </div>
   );

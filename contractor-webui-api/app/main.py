@@ -14,9 +14,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+import os
+
+from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from markdown_it import MarkdownIt
 
 from . import docs, inbox
@@ -178,3 +180,114 @@ def get_doc(
         "title": entry.title,
         "html": html,
     }
+
+
+# ----- Jo chat (v2) -----
+#
+# Gated by JO_ENABLE=1 because v2 requires the `claude` CLI installed on the
+# desktop. When disabled, the routes return 503 so the SPA can show a
+# degraded state without crashing.
+
+_JO_ENABLED = os.environ.get("JO_ENABLE", "0") == "1"
+
+
+def _jo_require_enabled() -> None:
+    if not _JO_ENABLED:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "jo_disabled")
+
+
+@app.on_event("startup")
+async def _startup_jo():
+    if _JO_ENABLED:
+        from .jo import get_manager
+        await get_manager().start_gc()
+
+
+@app.post("/jo/session")
+async def jo_create_session(user: dict[str, Any] = Depends(current_user)):
+    _jo_require_enabled()
+    from .jo import JoClaudeMissing, JoSessionLimitExceeded, get_manager
+    try:
+        sess = get_manager().create_session(user_id=user["sub"])
+    except JoClaudeMissing as e:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "claude_unavailable") from e
+    except JoSessionLimitExceeded as e:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "session_limit") from e
+    return {
+        "id": sess.id,
+        "created_at": sess.created_at,
+        "last_active_at": sess.last_active_at,
+        "status": "active",
+    }
+
+
+@app.get("/jo/sessions")
+async def jo_list_sessions(user: dict[str, Any] = Depends(current_user)):
+    _jo_require_enabled()
+    from .jo import get_manager
+    items = get_manager().list_for_user(user["sub"])
+    return {
+        "items": [
+            {
+                "id": s.id,
+                "created_at": s.created_at,
+                "last_active_at": s.last_active_at,
+                "status": "closed" if s.closed else "active",
+            }
+            for s in items
+        ],
+    }
+
+
+@app.post("/jo/session/{session_id}/send")
+async def jo_send(
+    session_id: str,
+    body: dict[str, Any] = Body(...),
+    user: dict[str, Any] = Depends(current_user),
+):
+    _jo_require_enabled()
+    from .jo import JoSessionNotFound, get_manager
+    text = body.get("text")
+    if not isinstance(text, str) or not text:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "text_required")
+    try:
+        await get_manager().send(user["sub"], session_id, text)
+    except JoSessionNotFound as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "session_not_found") from e
+    return Response(status_code=204)
+
+
+@app.get("/jo/session/{session_id}/stream")
+async def jo_stream(session_id: str, user: dict[str, Any] = Depends(current_user)):
+    _jo_require_enabled()
+    from .jo import JoSessionNotFound, get_manager
+    try:
+        manager = get_manager()
+        _ = manager.get(user["sub"], session_id)
+    except JoSessionNotFound as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "session_not_found") from e
+
+    async def _gen():
+        async for evt in manager.stream(user["sub"], session_id):
+            yield evt
+
+    return StreamingResponse(
+        _gen(),
+        media_type="text/event-stream",
+        headers={
+            "cache-control": "no-cache, no-transform",
+            "x-accel-buffering": "no",
+            "connection": "keep-alive",
+        },
+    )
+
+
+@app.delete("/jo/session/{session_id}")
+async def jo_close(session_id: str, user: dict[str, Any] = Depends(current_user)):
+    _jo_require_enabled()
+    from .jo import JoSessionNotFound, get_manager
+    try:
+        await get_manager().close(user["sub"], session_id)
+    except JoSessionNotFound as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "session_not_found") from e
+    return Response(status_code=204)
