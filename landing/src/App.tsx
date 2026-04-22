@@ -200,7 +200,7 @@ function Hero() {
           letterSpacing: '-0.03em', lineHeight: 1.02, marginBottom: 28,
         }}>
           <span className={`hero-title-line fade-in fade-2a ${anim}`} style={{ display: 'block' }}>Keep a record of</span>
-          <span className={`hero-title-accent fade-in fade-2b ${anim}`} style={{ display: 'block' }}><span style={{ background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #c4b5fd 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>every</span> AI decision.</span>
+          <span className={`hero-title-accent fade-in fade-2b ${anim}`} style={{ display: 'block' }}><span style={{ display: 'inline-block', transform: 'translateY(-0.08em)', background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #c4b5fd 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>every</span> AI decision.</span>
         </h1>
         <p className={`hero-subtitle fade-in fade-3 ${anim}`} style={{ fontSize: 'clamp(15px, 2.5vw, 19px)', color: '#94a3b8', lineHeight: 1.65, maxWidth: 620, margin: '0 auto 20px' }}>
           AILedger is a proxy that sits between your application and your AI provider. Every inference routes through it and becomes a hash-chained entry in an append-only log your compliance team can export for the Article&nbsp;12 audit trail.
@@ -325,7 +325,7 @@ function Compliance() {
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
         <div style={{ marginBottom: 48 }}>
           <h2 className="section-title" style={{ fontSize: 36, fontWeight: 700, color: '#fff', letterSpacing: '-0.75px', lineHeight: 1.2, marginBottom: 20 }}>
-            Built as audit infrastructure, not a dashboard with logging bolted on.
+            Built as infrastructure for auditing AI, not a dashboard with logging bolted on.
           </h2>
           <p style={{ fontSize: 17, color: '#94a3b8', lineHeight: 1.7 }}>
             The whole system is designed to produce records regulators will accept — and to be incapable of producing records regulators won't.
@@ -529,6 +529,10 @@ function FAQ() {
     {
       q: 'Where is data stored?',
       a: 'All data — fingerprints and metadata, never raw content — lives in AWS eu-central-1 (Frankfurt), via Supabase. Applies to every plan including Free. Nothing leaves the EU.',
+    },
+    {
+      q: 'Is AILedger an "AI audit" tool or an "audit of AI" tool?',
+      a: 'The second. "AI audit" platforms typically use AI to help auditors process evidence for general security/quality certifications (ISO 27001, NIS-2, DORA). AILedger is different: we build the infrastructure that lets regulators audit your AI system itself — every inference your application makes becomes a fingerprinted, hash-chained record. If you\'re shipping AI and need an Article 12 audit trail, AILedger. If you\'re going through ISO 27001 and want AI-assisted auditing, that\'s a different category of product.',
     },
   ]
 
@@ -1329,7 +1333,7 @@ function PricingPage() {
       <section className="section-pad" style={{ padding: '120px 32px 72px', textAlign: 'center' }}>
         <div style={{ maxWidth: 820, margin: '0 auto' }}>
           <h1 style={{ fontSize: 56, fontWeight: 700, color: '#fff', letterSpacing: '-1.5px', lineHeight: 1.1, marginBottom: 24 }}>
-            Audit-grade evidence for <span style={{ background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #c4b5fd 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>every</span> AI call your product makes.
+            Audit-grade evidence for <span style={{ display: 'inline-block', transform: 'translateY(-0.08em)', background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #c4b5fd 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>every</span> AI call your product makes.
           </h1>
           <p style={{ fontSize: 19, color: '#94a3b8', lineHeight: 1.6, marginBottom: 36, maxWidth: 680, margin: '0 auto 36px' }}>
             Three tiers. One chain of custody. Built for the EU AI Act Article&nbsp;12 conformance question your enterprise customers are already asking.
