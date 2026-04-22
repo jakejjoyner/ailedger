@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { MessageSquareText } from "lucide-react";
+import { MessageSquareText, Menu } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Inbox from "../components/Inbox";
 import DocsList from "../components/DocsList";
@@ -19,6 +19,7 @@ interface Props {
 export default function Home({ session, onLogout }: Props) {
   const [apiUp, setApiUp] = useState<boolean | null>(null);
   const [joOpen, setJoOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
     apiHealth()
@@ -34,16 +35,36 @@ export default function Home({ session, onLogout }: Props) {
         e.preventDefault();
         setJoOpen((v) => !v);
       }
-      if (e.key === "Escape" && joOpen) setJoOpen(false);
+      if (e.key === "Escape") {
+        if (joOpen) setJoOpen(false);
+        else if (navOpen) setNavOpen(false);
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [joOpen]);
+  }, [joOpen, navOpen]);
 
   return (
     <div className="flex h-full">
-      <Sidebar session={session} onLogout={onLogout} apiUp={apiUp} />
+      <Sidebar
+        session={session}
+        onLogout={onLogout}
+        apiUp={apiUp}
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+      />
       <main className="flex-1 overflow-hidden bg-zinc-950 relative">
+        {/* Mobile top bar with hamburger */}
+        <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-zinc-800 bg-zinc-900">
+          <button
+            aria-label="Open navigation"
+            onClick={() => setNavOpen(true)}
+            className="p-1.5 text-zinc-300 hover:bg-zinc-800 rounded-md"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <span className="text-sm font-semibold">{config.displayName}</span>
+        </div>
         <Routes>
           <Route index element={<InboxRoute />} />
           <Route path="inbox" element={<Inbox />} />
@@ -55,7 +76,8 @@ export default function Home({ session, onLogout }: Props) {
         <button
           onClick={() => setJoOpen((v) => !v)}
           title="Jo chat (press j)"
-          className="fixed right-6 bottom-6 h-12 w-12 rounded-full bg-blue-600 hover:bg-blue-500 shadow-lg flex items-center justify-center z-10"
+          aria-label="Open Jo chat"
+          className="fixed right-4 bottom-4 md:right-6 md:bottom-6 h-12 w-12 rounded-full bg-blue-600 hover:bg-blue-500 shadow-lg flex items-center justify-center z-10"
         >
           <MessageSquareText className="w-5 h-5" />
         </button>
@@ -66,10 +88,8 @@ export default function Home({ session, onLogout }: Props) {
 }
 
 function InboxRoute() {
-  // Default landing inside /app shows the hello-status stub alongside the inbox
-  // once v1 lights up. For v0 we show a greeting and a link to start.
   return (
-    <div className="p-8">
+    <div className="p-6 md:p-8">
       <h1 className="text-2xl font-semibold">Hello {config.displayName}</h1>
       <p className="text-zinc-400 mt-2">Status: <span className="text-emerald-400 font-semibold">ACTIVE</span></p>
       <p className="text-zinc-500 text-sm mt-6">

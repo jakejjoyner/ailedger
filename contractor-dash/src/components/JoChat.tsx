@@ -100,7 +100,7 @@ export default function JoChat({ open, onClose }: Props) {
 
   if (!open) return null;
   return (
-    <aside className="fixed right-0 top-0 bottom-0 w-[28rem] bg-zinc-900 border-l border-zinc-800 shadow-2xl flex flex-col z-20">
+    <aside className="fixed right-0 top-0 bottom-0 w-full sm:w-[28rem] bg-zinc-900 border-l border-zinc-800 shadow-2xl flex flex-col z-20">
       <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
         <div className="flex items-center gap-2">
           <MessageSquareText className="w-4 h-4 text-blue-400" />
