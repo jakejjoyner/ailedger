@@ -354,9 +354,6 @@ function Compliance() {
           <blockquote style={{ fontSize: 17, color: '#cbd5e1', lineHeight: 1.7, margin: 0, borderLeft: '2px solid rgba(129,140,248,0.5)', paddingLeft: 18 }}>
             "A customer could hash themselves. But then their audit defense is 'trust our internal log.' Our chain is externally verifiable by a regulator in SQL. That's the product."
           </blockquote>
-          <figcaption style={{ marginTop: 14, fontSize: 13, color: '#94a3b8' }}>
-            — Jake Joyner, Founder
-          </figcaption>
         </figure>
       </div>
     </section>
