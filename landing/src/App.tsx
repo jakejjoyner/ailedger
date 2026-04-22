@@ -241,7 +241,7 @@ function TrustBar() {
           What AILedger stores: SHA-256 fingerprints of inputs and outputs, plus metadata (timestamp, model, latency, status). What it doesn't store: the raw prompts or responses themselves. Records are hash-chained and append-only; data resides in EU-central-1 (Frankfurt).
         </p>
         <p style={{ fontSize: 17, color: '#94a3b8', lineHeight: 1.75 }}>
-          The EU AI Act enters full enforcement on August 2, 2026. High-risk AI systems face up to €35M in administrative fines for Article\u00a012 violations. Industry estimates put compliance readiness at under 30% across EU AI operators today.
+          The EU AI Act enters full enforcement on August 2, 2026. High-risk AI systems face up to €35M in administrative fines for Article 12 violations. Industry estimates put compliance readiness at under 30% across EU AI operators today.
         </p>
       </div>
     </section>
@@ -1251,7 +1251,7 @@ function PricingPage() {
     {
       tier: 'Ledger',
       header: "If you're shipping LLM features and your next enterprise deal will ask about AI logging — start here.",
-      body: 'You swap a base URL; we capture every request and response as a SHA-256-fingerprinted ledger entry (full chain verification ships alongside SOC 2 Type I). Your dev-observability tool still answers "is my prompt working." We answer "can you prove what this model said, and when, to someone who needs to verify it later." Adjacent stacks, different question.',
+      body: 'You swap a base URL; we capture every request and response as a SHA-256-fingerprinted ledger entry (full chain verification ships alongside SOC 2 Type I). Your dev-observability tool still answers "is my prompt working?" We answer "can you prove what this model said, and when, to someone who needs to verify it later?" Adjacent stacks, different question.',
       footer: 'Ledger is priced for an engineering departmental budget. No procurement call required to evaluate.',
     },
     {
@@ -1264,7 +1264,7 @@ function PricingPage() {
       tier: 'Audit',
       header: 'If BaFin, FCA, AMF, or an equivalent supervisor can ask you — specifically, your deployer entity — to produce the log of a specific AI call, Audit is the tier built for that question.',
       body: "Dedicated data residency, configured retention aligned to your sectoral overlay, and a SIG / CAIQ package available at engagement start so your review calendar isn't gated on our response time. MRM integration hooks (for coexistence with ValidMind / Monitaur governance layers) are on roadmap and scoped at Audit-contract signing — we're complementary to governance layers, not a rip-and-replace.",
-      footer: "Audit is gated on SOC 2 Type II availability (Q3 2027 target) and reference-customer fit. If we're not ready for you yet, we'll say so.",
+      footer: "Audit is gated on SOC 2 Type II availability (Q3 2027 target) and reference-customer fit.",
     },
   ]
 
@@ -1284,7 +1284,7 @@ function PricingPage() {
     },
     {
       q: "What's your current SOC 2 status?",
-      a: "SOC 2 Type I audit is in progress, target completion Q3 2026. SOC 2 Type II is on-track with a realistic target of Q3 2027 — Audit is gated on Type II availability. We'd rather name the target than paper over the gap; timelines are commitments-of-intent, not contractual promises.",
+      a: "SOC 2 Type I audit is in progress, target completion Q3 2026. SOC 2 Type II is on-track with a realistic target of Q3 2027 — Audit is gated on Type II availability. We'd rather name the target than paper over the gap.",
     },
     {
       q: 'Do you offer on-prem or BYOC (bring-your-own-cloud)?',
@@ -1431,10 +1431,7 @@ function PricingPage() {
           </div>
           <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 920 }}>
             <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7 }}>
-              <strong style={{ color: '#94a3b8' }}>Honest about gaps:</strong> 6-month retention baseline on Ledger and Evidence. Audit is configured to your sectoral overlay and can extend beyond 6 months — up to regulated-period maximums (typically 5-7 years depending on BaFin/FCA/AMF/Solvency II/MiCA scope). If your regulator requires longer than 6 months and you're on Ledger or Evidence, that's the conversation that moves you to Audit.
-            </p>
-            <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7 }}>
-              ISO 27001, HIPAA BAA, and sector-specific attestations on roadmap post–SOC 2 Type II (Q3 2027 target). Timelines are commitments-of-intent, not contractual.
+              ISO 27001, HIPAA BAA, and sector-specific attestations on roadmap post–SOC 2 Type II (Q3 2027 target).
             </p>
           </div>
         </div>
@@ -1492,7 +1489,7 @@ function PricingPage() {
             ))}
           </ul>
           <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, marginTop: 36, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-            <strong style={{ color: '#94a3b8' }}>Our substrate claim strengthens at each attestation milestone:</strong> Q2 2026 Article 12 conformance letter template ships (Evidence + Audit tier deliverable); Q3 2026 SOC 2 Type I attestation; Q3 2026+ first design-partner audit-passes we can reference; Q3 2027 SOC 2 Type II. Language strengthens as backing lands; timelines are commitments-of-intent, not contractual.
+            SOC 2 Type I target Q3 2026. SOC 2 Type II target Q3 2027.
           </p>
         </div>
       </section>
@@ -1538,7 +1535,7 @@ function PricingPage() {
             Not sure which tier fits?
           </h2>
           <p style={{ fontSize: 17, color: '#94a3b8', marginBottom: 36, lineHeight: 1.7 }}>
-            A 20-minute call with our team maps your Article 12 surface against the three tiers honestly. If you're not ready for us — or we're not ready for you — we'll say so on the call, not after a procurement cycle.
+            A 20-minute call maps your Article 12 surface against the three tiers. If there's no fit — on your side or ours — the call is where you find out, not after a procurement cycle.
           </p>
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href="/contact" style={{ padding: '14px 28px', background: '#4f46e5', color: '#fff', fontWeight: 600, fontSize: 15, borderRadius: 12, textDecoration: 'none' }}>
