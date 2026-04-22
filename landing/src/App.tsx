@@ -81,7 +81,7 @@ function Nav() {
       borderBottom: '1px solid rgba(255,255,255,0.06)',
       background: 'rgba(10,11,15,0.85)', backdropFilter: 'blur(12px)',
     }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 20px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 48px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', cursor: 'pointer' }}>
           <img src="/favicon.svg" alt="AILedger" style={{ width: 20, height: 20, marginTop: -1 }} />
           <span style={{ color: '#fff', fontWeight: 600, fontSize: 16, letterSpacing: '-0.3px' }}>AILedger</span>
@@ -615,7 +615,7 @@ function Footer() {
       borderTop: '1px solid rgba(255,255,255,0.06)',
       padding: '28px 32px',
     }}>
-      <div className="footer-row" style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="footer-row" style={{ maxWidth: 1400, margin: '0 auto', padding: '0 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ color: '#334155', fontSize: 14 }}>AILedger</span>
         <div className="footer-links" style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
           <a href="/legal" style={{ color: '#334155', fontSize: 14, textDecoration: 'none' }}>Legal</a>
@@ -1315,7 +1315,7 @@ function PricingPage() {
       a: "Ledger's published band (10k free / 100k on Pro / 1M on Scale; usage-based above) is intended to stay stable through launch. Evidence and Audit are anchored at band-shape (mid-five-figure and enterprise-custom respectively) and firm up alongside our SOC 2 Type I completion (Q3 2026 target). If you're in an active evaluation we'll price-lock at the time of your order form.",
     },
     {
-      q: 'Who owns the audit evidence — you or me?',
+      q: 'Who owns the audit evidence — you or us?',
       a: 'You do. AILedger is a processor, not a controller, of your audit data. Your ledger is your evidence; our job is to make it tamper-evident, verifiable, and exportable in a format your auditor will accept. Our DPA reflects that posture.',
     },
   ]
