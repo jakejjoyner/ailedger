@@ -139,7 +139,10 @@ export default function JoChat({ open, onClose, userId }: Props) {
     const el = scrollRef.current;
     if (!el || !restoredScrollRef.current) return;
     if (pinnedToBottomRef.current) {
-      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      // Use "auto" (instant) not "smooth" during streaming — smooth-scroll
+      // stacking on every chunk creates the "racing/jumpy" feel Pasha
+      // reported. Instant-to-bottom reads as natural chat.
+      el.scrollTop = el.scrollHeight;
     }
   }, [messages]);
 
@@ -247,7 +250,7 @@ export default function JoChat({ open, onClose, userId }: Props) {
 
   if (!open) return null;
   return (
-    <aside className="fixed right-0 top-0 bottom-0 w-full sm:w-[28rem] bg-zinc-900 border-l border-zinc-800 shadow-2xl flex flex-col z-20">
+    <aside className="fixed right-0 top-0 bottom-0 w-full sm:w-[36rem] lg:w-[42rem] bg-zinc-900 border-l border-zinc-800 shadow-2xl flex flex-col z-20">
       <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
         <div className="flex items-center gap-2">
           <MessageSquareText className="w-4 h-4 text-blue-400" />
@@ -272,7 +275,12 @@ export default function JoChat({ open, onClose, userId }: Props) {
         </div>
       </header>
 
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        style={{ overscrollBehavior: "contain" }}
+        className="flex-1 overflow-y-auto p-4 space-y-4"
+      >
         {messages.length === 0 && (
           <div className="text-sm text-zinc-500">Ask Jo anything.</div>
         )}
@@ -298,11 +306,18 @@ export default function JoChat({ open, onClose, userId }: Props) {
         className="border-t border-zinc-800 p-3 flex items-end gap-2"
       >
         <textarea
-          rows={2}
+          ref={(el) => {
+            // Auto-grow: reset height then set to scrollHeight capped at 400px.
+            if (!el) return;
+            el.style.height = "auto";
+            const next = Math.min(Math.max(el.scrollHeight, 120), 400);
+            el.style.height = `${next}px`;
+          }}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Message Jo…"
-          className="flex-1 resize-none px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md text-sm focus:outline-none focus:border-blue-500"
+          style={{ minHeight: 120, maxHeight: 400 }}
+          className="flex-1 resize-none px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-md text-base leading-relaxed focus:outline-none focus:border-blue-500"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
