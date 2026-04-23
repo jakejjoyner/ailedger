@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageSquareText, Send, Loader2, RefreshCw, X } from "lucide-react";
+import { MessageSquareText, Send, Loader2, RefreshCw, X, Maximize2, Minimize2 } from "lucide-react";
 import { createJoSession, listJoSessions, sendJoMessage, streamJo, closeJoSession, type JoSession } from "../lib/jo";
 
 interface Message {
@@ -62,14 +62,46 @@ function saveCachedMessages(userId: string, messages: Message[]): void {
   }
 }
 
+const FULLSCREEN_KEY = "jo_chat_fullscreen_v1";
+
+function loadFullscreen(): boolean {
+  try {
+    return localStorage.getItem(FULLSCREEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 export default function JoChat({ open, onClose, userId }: Props) {
   const [session, setSession] = useState<JoSession | null>(null);
   const [messages, setMessages] = useState<Message[]>(() => loadCachedMessages(userId));
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [fullscreen, setFullscreen] = useState<boolean>(() => loadFullscreen());
   const streamRef = useRef<{ cancel: () => void } | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Persist full-screen toggle across reload.
+  useEffect(() => {
+    try {
+      localStorage.setItem(FULLSCREEN_KEY, fullscreen ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [fullscreen]);
+
+  // ESC exits full-screen (doesn't close the whole panel).
+  useEffect(() => {
+    if (!open || !fullscreen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setFullscreen(false);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, fullscreen]);
 
   // Persist messages to localStorage on every change so panel-toggle /
   // logout / reload doesn't lose visual history. The backend claude_sid
@@ -250,7 +282,13 @@ export default function JoChat({ open, onClose, userId }: Props) {
 
   if (!open) return null;
   return (
-    <aside className="fixed right-0 top-0 bottom-0 w-full sm:w-[36rem] lg:w-[42rem] bg-zinc-900 border-l border-zinc-800 shadow-2xl flex flex-col z-20">
+    <aside
+      className={
+        fullscreen
+          ? "fixed inset-0 bg-zinc-900 shadow-2xl flex flex-col z-50"
+          : "fixed right-0 top-0 bottom-0 w-full sm:w-[36rem] lg:w-[42rem] bg-zinc-900 border-l border-zinc-800 shadow-2xl flex flex-col z-20"
+      }
+    >
       <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
         <div className="flex items-center gap-2">
           <MessageSquareText className="w-4 h-4 text-blue-400" />
@@ -258,6 +296,14 @@ export default function JoChat({ open, onClose, userId }: Props) {
           {session && <span className="text-xs text-zinc-500 font-mono">#{session.id.slice(0, 8)}</span>}
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => setFullscreen((v) => !v)}
+            title={fullscreen ? "Exit full-screen (Esc)" : "Full-screen"}
+            aria-label={fullscreen ? "Exit full-screen" : "Full-screen"}
+            className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded"
+          >
+            {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
           <button
             onClick={newChat}
             title="New chat"
@@ -279,8 +325,13 @@ export default function JoChat({ open, onClose, userId }: Props) {
         ref={scrollRef}
         onScroll={handleScroll}
         style={{ overscrollBehavior: "contain" }}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
+        className={
+          fullscreen
+            ? "flex-1 overflow-y-auto"
+            : "flex-1 overflow-y-auto p-4 space-y-4"
+        }
       >
+        <div className={fullscreen ? "max-w-[768px] mx-auto px-6 pt-12 pb-4 space-y-4" : ""}>
         {messages.length === 0 && (
           <div className="text-sm text-zinc-500">Ask Jo anything.</div>
         )}
@@ -296,6 +347,7 @@ export default function JoChat({ open, onClose, userId }: Props) {
           </div>
         ))}
         {err && <p className="text-xs text-rose-400">{err}</p>}
+        </div>
       </div>
 
       <form
@@ -303,8 +355,17 @@ export default function JoChat({ open, onClose, userId }: Props) {
           e.preventDefault();
           submit();
         }}
-        className="border-t border-zinc-800 p-3 flex items-end gap-2"
+        className={
+          fullscreen
+            ? "border-t border-zinc-800 py-3"
+            : "border-t border-zinc-800 p-3 flex items-end gap-2"
+        }
       >
+        <div className={
+          fullscreen
+            ? "max-w-[768px] mx-auto px-6 flex items-end gap-2 w-full"
+            : "contents"
+        }>
         <textarea
           ref={(el) => {
             // Auto-grow: reset height then set to scrollHeight capped at 400px.
@@ -333,6 +394,7 @@ export default function JoChat({ open, onClose, userId }: Props) {
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </button>
+        </div>
       </form>
     </aside>
   );
