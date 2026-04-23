@@ -14,7 +14,7 @@
     "RP_NAME": "Contractor Web UI (dev)",
     "RP_ORIGIN": "http://localhost:8787",
     "MAGIC_LINK_FROM": "no-reply@example.invalid",
-    "SESSION_TTL_SECONDS": "900",
+    "SESSION_TTL_SECONDS": "28800",
     "REFRESH_TTL_SECONDS": "604800",
     "MAGIC_LINK_TTL_SECONDS": "600",
     "ALLOWED_RETURN_HOSTS": "localhost:5173"
@@ -70,7 +70,7 @@
         "RP_ORIGIN": "https://contractor-auth-staging.workers.dev",
         "MAGIC_LINK_FROM": "no-reply-staging@jvholdings.co",
         "MAGIC_LINK_REDIRECT_BASE": "https://contractor-auth-staging.workers.dev",
-        "SESSION_TTL_SECONDS": "900",
+        "SESSION_TTL_SECONDS": "28800",
         "REFRESH_TTL_SECONDS": "604800",
         "MAGIC_LINK_TTL_SECONDS": "600",
         "ALLOWED_RETURN_HOSTS": "contractor-auth-staging.workers.dev"
@@ -104,7 +104,7 @@
         "RP_ORIGIN": "https://pasha.jvholdings.co",
         "MAGIC_LINK_FROM": "no-reply@jvholdings.co",
         "MAGIC_LINK_REDIRECT_BASE": "https://pasha.jvholdings.co",
-        "SESSION_TTL_SECONDS": "900",
+        "SESSION_TTL_SECONDS": "28800",
         "REFRESH_TTL_SECONDS": "604800",
         "MAGIC_LINK_TTL_SECONDS": "600",
         "ALLOWED_RETURN_HOSTS": "pasha.jvholdings.co"
@@ -137,7 +137,7 @@
         "RP_ORIGIN": "https://jake-dash.ailedger.dev",
         "MAGIC_LINK_FROM": "no-reply@ailedger.dev",
         "MAGIC_LINK_REDIRECT_BASE": "https://jake-dash.ailedger.dev",
-        "SESSION_TTL_SECONDS": "900",
+        "SESSION_TTL_SECONDS": "28800",
         "REFRESH_TTL_SECONDS": "604800",
         "MAGIC_LINK_TTL_SECONDS": "600",
         "ALLOWED_RETURN_HOSTS": "jake-dash.ailedger.dev"
