@@ -93,7 +93,7 @@ export default function Home({ session, onLogout }: Props) {
           <Route index element={<InboxRoute />} />
           <Route path="inbox" element={<Inbox />} />
           <Route path="inbox/:id" element={<MessageView />} />
-          <Route path="docs" element={<DocsList />} />
+          <Route path="docs" element={<DocsList userId={session.userId ?? "anon"} />} />
           <Route path="docs/:id" element={<DocView />} />
           <Route path="*" element={<Navigate replace to="" />} />
         </Routes>
