@@ -244,6 +244,25 @@ body {
   outline-offset: 3px;
 }
 
+/* Tier card — subtle lift on hover, transition on the highlighted + unhighlighted equally */
+.tier-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.tier-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px -20px var(--accent-glow-shadow);
+  border-color: var(--border-accent-soft);
+}
+
+/* FAQ details — subtle emphasis when open */
+details[open] > summary > span:last-child {
+  transform: rotate(45deg);
+}
+details > summary > span:last-child {
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+
 /* Hamburger menu animation */
 .hamburger-line {
   transition: all 0.3s ease;
