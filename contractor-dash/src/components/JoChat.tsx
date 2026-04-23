@@ -20,6 +20,26 @@ interface Props {
 // last N messages to cap localStorage growth.
 const MSG_CACHE_PREFIX = "jo_chat_messages_v1:";
 const MSG_CACHE_MAX = 200;
+// Separate key for scroll position — small, updated on every scroll, don't
+// want to thrash the messages blob.
+const SCROLL_CACHE_PREFIX = "jo_chat_scroll_v1:";
+
+function loadScroll(userId: string): number {
+  try {
+    const raw = localStorage.getItem(SCROLL_CACHE_PREFIX + userId);
+    return raw ? parseInt(raw, 10) || 0 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveScroll(userId: string, scrollTop: number): void {
+  try {
+    localStorage.setItem(SCROLL_CACHE_PREFIX + userId, String(Math.round(scrollTop)));
+  } catch {
+    /* ignore */
+  }
+}
 
 function loadCachedMessages(userId: string): Message[] {
   try {
@@ -84,9 +104,53 @@ export default function JoChat({ open, onClose, userId }: Props) {
     };
   }, [open]);
 
+  // Track whether the user is "pinned to bottom" (within 40px). If pinned,
+  // new streamed chunks auto-scroll to bottom (classic chat). If scrolled up,
+  // new chunks don't yank the viewport — the contractor stays where they are
+  // reading. Ref, not state, to avoid re-render thrash on every scroll.
+  const pinnedToBottomRef = useRef(true);
+  const restoredScrollRef = useRef(false);
+
+  // Restore prior scroll position once on panel-open, after layout settles.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    if (!open) {
+      restoredScrollRef.current = false;
+      return;
+    }
+    const el = scrollRef.current;
+    if (!el) return;
+    // rAF ensures layout has computed from the loaded messages.
+    requestAnimationFrame(() => {
+      if (restoredScrollRef.current) return;
+      const saved = loadScroll(userId);
+      if (saved > 0) {
+        el.scrollTop = saved;
+        // If restored position is near the bottom, stay in pinned mode.
+        pinnedToBottomRef.current = el.scrollHeight - (el.scrollTop + el.clientHeight) < 40;
+      } else {
+        el.scrollTop = el.scrollHeight;
+        pinnedToBottomRef.current = true;
+      }
+      restoredScrollRef.current = true;
+    });
+  }, [open, userId]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !restoredScrollRef.current) return;
+    if (pinnedToBottomRef.current) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
   }, [messages]);
+
+  function handleScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    // Pinned-to-bottom if within 40px of the end.
+    const atBottom = el.scrollHeight - (el.scrollTop + el.clientHeight) < 40;
+    pinnedToBottomRef.current = atBottom;
+    saveScroll(userId, el.scrollTop);
+  }
 
   function openStream(sessionId: string) {
     streamRef.current?.cancel();
@@ -170,7 +234,10 @@ export default function JoChat({ open, onClose, userId }: Props) {
     } catch { /* best-effort */ }
     try {
       localStorage.removeItem(MSG_CACHE_PREFIX + userId);
+      localStorage.removeItem(SCROLL_CACHE_PREFIX + userId);
     } catch { /* ignore */ }
+    pinnedToBottomRef.current = true;
+    restoredScrollRef.current = false;
     setMessages([]);
     setErr(null);
     const fresh = await createJoSession();
@@ -205,7 +272,7 @@ export default function JoChat({ open, onClose, userId }: Props) {
         </div>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="text-sm text-zinc-500">Ask Jo anything.</div>
         )}
