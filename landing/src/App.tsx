@@ -235,7 +235,7 @@ function TrustBar() {
       borderTop: '1px solid var(--border-subtle)',
       borderBottom: '1px solid var(--border)',
       background: 'var(--surface-tint-soft)',
-      padding: '72px 32px',
+      padding: '96px 32px',
     }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
         <p style={{ fontSize: 17, color: 'var(--fg-muted)', lineHeight: 1.75, marginBottom: 20 }}>
@@ -268,7 +268,7 @@ function HowItWorks() {
     },
   ]
   return (
-    <section id="how-it-works" className="section-pad" style={{ padding: '100px 32px' }}>
+    <section id="how-it-works" className="section-pad" style={{ padding: '96px 32px' }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
         <div style={{ marginBottom: 48 }}>
           <h2 className="section-title" style={{ fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.025em', marginBottom: 16 }}>How it works</h2>
@@ -317,14 +317,14 @@ function Compliance() {
   ]
   return (
     <section className="section-pad" style={{
-      padding: '100px 32px',
+      padding: '96px 32px',
       borderTop: '1px solid var(--border)',
       borderBottom: '1px solid var(--border)',
       background: 'var(--surface-tint-soft)',
     }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
         <div style={{ marginBottom: 48 }}>
-          <h2 className="section-title" style={{ fontSize: 36, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.75px', lineHeight: 1.2, marginBottom: 20 }}>
+          <h2 className="section-title" style={{ fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.025em', lineHeight: 1.15, marginBottom: 20 }}>
             Built as infrastructure for auditing AI, not a dashboard with logging bolted on.
           </h2>
           <p style={{ fontSize: 17, color: 'var(--fg-muted)', lineHeight: 1.7 }}>
@@ -362,12 +362,12 @@ function Compliance() {
 
 function CodeSnippet() {
   return (
-    <section className="section-pad" style={{ padding: '100px 32px' }}>
+    <section className="section-pad" style={{ padding: '96px 32px' }}>
       <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
-        <h2 className="section-title" style={{ fontSize: 36, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.75px', marginBottom: 16, lineHeight: 1.2 }}>Integration is one URL and one header.</h2>
+        <h2 className="section-title" style={{ fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.025em', marginBottom: 16, lineHeight: 1.15 }}>Integration is one URL and one header.</h2>
         <p style={{ fontSize: 17, color: 'var(--fg-muted)', marginBottom: 44, lineHeight: 1.7 }}>Two lines change. The rest of your application code stays intact.</p>
         <div style={{
-          textAlign: 'left', borderRadius: 16,
+          textAlign: 'left', borderRadius: 12,
           border: '1px solid var(--border-prominent)',
           background: 'var(--bg-code)', overflow: 'hidden',
         }}>
@@ -443,7 +443,7 @@ function Pricing() {
   ]
 
   return (
-    <section id="pricing" className="section-pad" style={{ padding: '100px 32px', borderTop: '1px solid var(--border)', scrollMarginTop: '120px' }}>
+    <section id="pricing" className="section-pad" style={{ padding: '96px 32px', borderTop: '1px solid var(--border)', scrollMarginTop: '120px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ marginBottom: 48, maxWidth: 720 }}>
           <h2 className="section-title" style={{ fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.025em', marginBottom: 16 }}>
@@ -455,8 +455,8 @@ function Pricing() {
         </div>
         <div className="three-col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'stretch' }}>
           {tiers.map((tier) => (
-            <div key={tier.name} style={{
-              borderRadius: 16,
+            <div key={tier.name} className="tier-card" style={{
+              borderRadius: 12,
               border: tier.highlight ? '1px solid var(--border-accent)' : '1px solid var(--border)',
               background: tier.highlight ? 'var(--accent-tint-bg-soft)' : 'var(--surface-tint)',
               padding: '32px 28px',
@@ -473,7 +473,7 @@ function Pricing() {
               </p>
               <a href={tier.href} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '11px 20px', borderRadius: 10,
+                padding: '12px 20px', borderRadius: 10,
                 fontSize: 14, fontWeight: 600, textDecoration: 'none',
                 background: tier.highlight ? 'var(--accent)' : 'var(--border)',
                 color: tier.highlight ? 'var(--fg-on-accent)' : 'var(--fg-body)',
@@ -535,12 +535,12 @@ function FAQ() {
 
   return (
     <section className="section-pad" style={{
-      padding: '100px 32px',
+      padding: '96px 32px',
       borderTop: '1px solid var(--border)',
     }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 56 }}>
-          <h2 style={{ fontSize: 36, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.75px', marginBottom: 12 }}>
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <h2 className="section-title" style={{ fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.025em', lineHeight: 1.15, marginBottom: 12 }}>
             Frequently asked questions
           </h2>
           <p style={{ fontSize: 16, color: 'var(--fg-subtle)' }}>
@@ -589,7 +589,7 @@ function FAQ() {
 function CTA() {
   return (
     <section className="section-pad" style={{
-      padding: '100px 32px', textAlign: 'center',
+      padding: '96px 32px', textAlign: 'center',
       borderTop: '1px solid var(--border)',
     }}>
       <div style={{ maxWidth: 520, margin: '0 auto' }}>
@@ -599,10 +599,11 @@ function CTA() {
         <p style={{ fontSize: 17, color: 'var(--fg-muted)', marginBottom: 40, lineHeight: 1.7 }}>
           Free to start. No credit card required. Integration takes about a minute: one URL, one header, one account.
         </p>
-        <a href={DASHBOARD_URL} style={{
-          display: 'inline-block', padding: '16px 36px',
+        <a className="hero-cta-primary" href={DASHBOARD_URL} style={{
+          display: 'inline-block', padding: '14px 28px',
           background: 'var(--accent)', color: 'var(--fg-on-accent)',
-          fontWeight: 600, fontSize: 16, borderRadius: 12, textDecoration: 'none',
+          fontWeight: 600, fontSize: 15, borderRadius: 12, textDecoration: 'none',
+          letterSpacing: '-0.005em',
         }}>
           Create your account
         </a>
@@ -1327,9 +1328,9 @@ function PricingPage() {
       <Nav />
 
       {/* Header banner */}
-      <section className="section-pad" style={{ padding: '120px 32px 72px', textAlign: 'center' }}>
+      <section className="section-pad" style={{ padding: '128px 32px 64px', textAlign: 'center' }}>
         <div style={{ maxWidth: 820, margin: '0 auto' }}>
-          <h1 style={{ fontSize: 56, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-1.5px', lineHeight: 1.1, marginBottom: 24 }}>
+          <h1 className="hero-title" style={{ fontSize: 'clamp(40px, 6vw, 64px)', fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.03em', lineHeight: 1.05, marginBottom: 24 }}>
             Audit-grade evidence for <span style={{ display: 'inline-block', position: 'relative', top: '-0.065em', paddingBottom: '0.12em', background: 'linear-gradient(135deg, var(--gradient-1) 0%, var(--gradient-2) 50%, var(--gradient-3) 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>every</span> AI call your product makes.
           </h1>
           <p style={{ fontSize: 19, color: 'var(--fg-muted)', lineHeight: 1.6, marginBottom: 36, maxWidth: 680, margin: '0 auto 36px' }}>
@@ -1351,11 +1352,11 @@ function PricingPage() {
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div className="three-col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'stretch' }}>
             {tiers.map((tier) => (
-              <div key={tier.name} style={{
-                borderRadius: 16,
+              <div key={tier.name} className="tier-card" style={{
+                borderRadius: 12,
                 border: tier.highlight ? '1px solid var(--border-accent)' : '1px solid var(--border)',
                 background: tier.highlight ? 'var(--accent-tint-bg-soft)' : 'var(--surface-tint)',
-                padding: '32px 28px',
+                padding: '36px 28px',
                 display: 'flex', flexDirection: 'column',
               }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: tier.highlight ? 'var(--accent-text)' : 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>
@@ -1406,7 +1407,7 @@ function PricingPage() {
         background: 'var(--surface-tint-soft)',
       }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 32, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.75px', marginBottom: 36 }}>
+          <h2 style={{ fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.025em', lineHeight: 1.15, marginBottom: 36 }}>
             What you get, tier by tier
           </h2>
           <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid var(--border)' }}>
@@ -1440,9 +1441,9 @@ function PricingPage() {
       </section>
 
       {/* Persona cards */}
-      <section className="section-pad" style={{ padding: '100px 32px', borderTop: '1px solid var(--border)' }}>
+      <section className="section-pad" style={{ padding: '96px 32px', borderTop: '1px solid var(--border)' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 32, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.75px', marginBottom: 36 }}>
+          <h2 style={{ fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.025em', lineHeight: 1.15, marginBottom: 36 }}>
             Why this tier is for you
           </h2>
           <div className="three-col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
@@ -1472,12 +1473,12 @@ function PricingPage() {
 
       {/* Competitive positioning */}
       <section className="section-pad" style={{
-        padding: '100px 32px',
+        padding: '96px 32px',
         borderTop: '1px solid var(--border)',
         background: 'var(--surface-tint-soft)',
       }}>
         <div style={{ maxWidth: 820, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 32, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.75px', marginBottom: 20 }}>
+          <h2 style={{ fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.025em', lineHeight: 1.15, marginBottom: 20 }}>
             Where we sit
           </h2>
           <p style={{ fontSize: 17, color: 'var(--fg-muted)', lineHeight: 1.7, marginBottom: 36 }}>
@@ -1497,9 +1498,9 @@ function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="section-pad" style={{ padding: '100px 32px', borderTop: '1px solid var(--border)' }}>
+      <section className="section-pad" style={{ padding: '96px 32px', borderTop: '1px solid var(--border)' }}>
         <div style={{ maxWidth: 820, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 32, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.75px', marginBottom: 36 }}>
+          <h2 style={{ fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.025em', lineHeight: 1.15, marginBottom: 36 }}>
             Pricing FAQ
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -1529,11 +1530,11 @@ function PricingPage() {
 
       {/* Page-foot CTA */}
       <section className="section-pad" style={{
-        padding: '100px 32px', textAlign: 'center',
+        padding: '96px 32px', textAlign: 'center',
         borderTop: '1px solid var(--border)',
       }}>
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 32, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.75px', marginBottom: 16 }}>
+          <h2 style={{ fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.025em', lineHeight: 1.15, marginBottom: 16 }}>
             Not sure which tier fits?
           </h2>
           <p style={{ fontSize: 17, color: 'var(--fg-muted)', marginBottom: 36, lineHeight: 1.7 }}>
