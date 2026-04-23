@@ -34,6 +34,19 @@ log = logging.getLogger("contractor-webui-api.jo")
 JO_IDLE_TTL_SECONDS = int(os.environ.get("JO_IDLE_TTL_SECONDS", "1800"))
 JO_MAX_SESSIONS_PER_USER = int(os.environ.get("JO_MAX_SESSIONS_PER_USER", "4"))
 JO_CLAUDE_BIN = os.environ.get("JO_CLAUDE_BIN", "claude")
+# If set, spawn claude via `sudo -n -u <user>` so subprocess runs as the
+# contractor Linux user (strict-confidence: jjoyner cannot process-inspect
+# the live session).
+JO_SPAWN_SUDO_USER = os.environ.get("JO_SPAWN_SUDO_USER", "")
+
+# Directory holding per-contractor pending first-turn content. On session
+# creation, if <dir>/${user_id}.md exists, its contents are injected into
+# the claude subprocess stdin before any user input — Jo delivers it as
+# her first streamed response. Per Mayor-approved welcome flow.
+# Convention: <dir>/${slug}.md keyed by contractor slug (user_id in current
+# JWT; slug for portability). File may be absent — no-op in that case.
+JO_PENDING_FIRST_TURN_DIR = os.environ.get("JO_PENDING_FIRST_TURN_DIR", "/srv/town/shared/canonical-jo/pending-first-turns")
+JO_PENDING_FIRST_TURN_CONSUME_ON_READ = os.environ.get("JO_PENDING_FIRST_TURN_CONSUME_ON_READ", "0") == "1"
 
 
 class JoClaudeMissing(RuntimeError):
@@ -95,21 +108,65 @@ class JoSessionManager:
             import pexpect  # noqa: F401
         except ImportError as e:
             raise JoClaudeMissing("pexpect not installed") from e
-        if shutil.which(JO_CLAUDE_BIN) is None:
+        if not JO_SPAWN_SUDO_USER and shutil.which(JO_CLAUDE_BIN) is None:
             raise JoClaudeMissing(f"claude binary not found (JO_CLAUDE_BIN={JO_CLAUDE_BIN})")
         existing = self._user_sessions(user_id)
         if len(existing) >= JO_MAX_SESSIONS_PER_USER:
             raise JoSessionLimitExceeded(f"max {JO_MAX_SESSIONS_PER_USER} concurrent sessions per user")
 
         import pexpect
+        if JO_SPAWN_SUDO_USER:
+            spawn_cmd = "/usr/bin/sudo"
+            spawn_args = ["-n", "-u", JO_SPAWN_SUDO_USER, JO_CLAUDE_BIN]
+        else:
+            spawn_cmd = JO_CLAUDE_BIN
+            spawn_args = []
         child = pexpect.spawn(
-            JO_CLAUDE_BIN,
-            ["--print=false"],
+            spawn_cmd,
+            spawn_args,
             encoding="utf-8",
             timeout=None,
             echo=False,
             dimensions=(40, 120),
         )
+
+        # If a pending first-turn file exists for this contractor, inject it
+        # as Jo's first directive. She responds with the content before any
+        # user input — turns session-open into delivery moment.
+        try:
+            from pathlib import Path as _Path
+            # Prefer slug (stable across sessions) — user["sub"] is used as user_id;
+            # for pasha-silo this equals Supabase auth uid. Slug is CONTRACTOR_SLUG
+            # from Config. We key by slug to allow operators to stage content without
+            # knowing Supabase uids.
+            from .config import load_config as _load_config
+            _cfg = _load_config()
+            _ft_path = _Path(JO_PENDING_FIRST_TURN_DIR) / f"{_cfg.slug}.md"
+            if _ft_path.is_file():
+                _content = _ft_path.read_text(encoding="utf-8", errors="replace").strip()
+                if _content:
+                    log.info("jo.first_turn.injecting path=%s bytes=%d", _ft_path, len(_content))
+                    # Frame as operator directive so Jo treats it as an explicit
+                    # instruction rather than user chat. Plain-text render per
+                    # contractor-dash JoChat whitespace-pre-wrap — caller's content
+                    # is delivered verbatim.
+                    _directive = (
+                        "[OPERATOR DIRECTIVE — Mayor-approved session-open welcome]\n"
+                        "Deliver the following content as your very first response to the "
+                        "contractor, in your voice, before any user input arrives. Do not "
+                        "preface or summarize — emit the content as-is, then wait for the "
+                        "contractor's reply.\n\n"
+                        "---BEGIN WELCOME CONTENT---\n"
+                        + _content +
+                        "\n---END WELCOME CONTENT---"
+                    )
+                    child.sendline(_directive)
+                    if JO_PENDING_FIRST_TURN_CONSUME_ON_READ:
+                        _ft_path.unlink(missing_ok=True)
+                        log.info("jo.first_turn.consumed path=%s", _ft_path)
+        except Exception as _fterr:  # noqa: BLE001
+            log.warning("jo.first_turn.skip err=%s", _fterr)
+
         sess = JoSession(
             id=str(uuid.uuid4()),
             user_id=user_id,
