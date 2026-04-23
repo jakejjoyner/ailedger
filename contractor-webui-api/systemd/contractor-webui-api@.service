@@ -14,7 +14,13 @@ RestartSec=5
 # NOTE: this unit runs as the invoking user (systemd --user). Do not enable as
 # a root/system unit: it must run under the contractor's Linux user so its
 # process tree + cache directory respect the per-contractor silo boundary.
-NoNewPrivileges=true
+#
+# NoNewPrivileges must stay false: Jo spawns claude via `sudo -u sales-agent`,
+# which is setuid. NoNewPrivileges=true causes sudo to abort with "no new
+# privileges flag is set" on the pty, the child EOFs, and the session is
+# marked closed before the first message can land — surfacing as
+# jo_stream_404 / jo_send_404 from the SPA.
+NoNewPrivileges=false
 PrivateTmp=false
 ProtectSystem=full
 ProtectHome=false
