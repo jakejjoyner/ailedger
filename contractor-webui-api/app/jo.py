@@ -497,8 +497,21 @@ class JoSessionManager:
         # stream (subscribed separately) drains the output queue.
         asyncio.create_task(self._run_claude(sess, text))
 
+    # Hard wall-clock cap per claude invocation. Above this, we kill the
+    # subprocess and surface a timeout error to the SPA instead of letting
+    # Pasha stare at a silent spinner. 90s is generous for claude --print
+    # responses; most come back in 10-40s.
+    CLAUDE_TURN_TIMEOUT_S = 90.0
+
     async def _run_claude(self, sess: JoSession, prompt: str) -> None:
-        """Spawn `claude --print` for one turn and pipe stdout to the queue."""
+        """Spawn `claude --print` for one turn and pipe stdout to the queue.
+
+        Emits error sentinels (__ERROR__:<code>:<message>) on failure modes
+        that the SPA's SSE stream layer converts to `event: error` frames.
+        Catches: spawn failure, hard timeout, non-zero exit. Each surfaces
+        a distinct error code so the UI can render an actionable message
+        instead of a silent spinner.
+        """
         if JO_SPAWN_SUDO_USER:
             argv = ["/usr/bin/sudo", "-n", "-u", JO_SPAWN_SUDO_USER, JO_CLAUDE_BIN]
         else:
@@ -524,31 +537,71 @@ class JoSessionManager:
             )
         except Exception:
             log.exception("jo.session.spawn.fail id=%s", sess.id)
-            await sess.output_queue.put("[error: claude spawn failed]\n")
+            await sess.output_queue.put("__ERROR__:SPAWN:Jo couldn't start a session. Try again in a moment.")
             await sess.output_queue.put("__TURN_END__")
             return
 
         sess.current_proc = proc
         assert proc.stdout is not None
 
-        while True:
-            chunk_bytes = await proc.stdout.read(4096)
-            if not chunk_bytes:
-                break
-            chunk = chunk_bytes.decode("utf-8", errors="replace")
-            sess.approximate_token_count += max(1, len(chunk) // 4)
-            await sess.output_queue.put(chunk)
+        start = time.time()
+        got_any_output = False
+
+        async def _drain_stdout() -> None:
+            nonlocal got_any_output
+            while True:
+                chunk_bytes = await proc.stdout.read(4096)
+                if not chunk_bytes:
+                    return
+                got_any_output = True
+                chunk = chunk_bytes.decode("utf-8", errors="replace")
+                sess.approximate_token_count += max(1, len(chunk) // 4)
+                await sess.output_queue.put(chunk)
+
+        try:
+            await asyncio.wait_for(_drain_stdout(), timeout=self.CLAUDE_TURN_TIMEOUT_S)
+        except asyncio.TimeoutError:
+            log.warning(
+                "jo.session.turn.timeout id=%s elapsed=%.1fs got_output=%s",
+                sess.id, time.time() - start, got_any_output,
+            )
+            try:
+                proc.terminate()
+                # Give it 2s to exit gracefully, then SIGKILL
+                try:
+                    await asyncio.wait_for(proc.wait(), timeout=2.0)
+                except asyncio.TimeoutError:
+                    proc.kill()
+            except Exception:
+                pass
+            sess.current_proc = None
+            msg = (
+                "Jo's reply timed out. This usually means claude is overloaded "
+                "or the prompt is very long. Try again — or break your message "
+                "into smaller pieces."
+            )
+            await sess.output_queue.put(f"__ERROR__:TIMEOUT:{msg}")
+            await sess.output_queue.put("__TURN_END__")
+            return
 
         rc = await proc.wait()
         sess.current_proc = None
-        if rc != 0 and proc.stderr is not None:
-            try:
-                err = (await proc.stderr.read()).decode("utf-8", errors="replace")
-                if err.strip():
-                    log.warning("jo.session.turn.nonzero id=%s rc=%d stderr_bytes=%d", sess.id, rc, len(err))
-                    await sess.output_queue.put(f"\n[claude exited rc={rc}]\n")
-            except Exception:
-                pass
+        if rc != 0:
+            err_text = ""
+            if proc.stderr is not None:
+                try:
+                    err_text = (await proc.stderr.read()).decode("utf-8", errors="replace").strip()
+                except Exception:
+                    pass
+            log.warning("jo.session.turn.nonzero id=%s rc=%d stderr=%r", sess.id, rc, err_text[:500])
+            if not got_any_output:
+                # Complete failure — surface as error rather than appending
+                # to a partial response.
+                friendly = (
+                    "Jo session exited before replying "
+                    f"(exit code {rc}). Try refreshing the chat."
+                )
+                await sess.output_queue.put(f"__ERROR__:EXIT_{rc}:{friendly}")
 
         await sess.output_queue.put("__TURN_END__")
 
@@ -569,6 +622,14 @@ class JoSessionManager:
                 # to clear its "thinking" indicator. Keep the SSE connection
                 # open for the next user message in the same session.
                 yield _sse_event("turn_end", "")
+                continue
+            # Error sentinel: __ERROR__:<code>:<message>
+            # Convert to a structured SSE error event so the SPA can render
+            # it as a distinct error bubble rather than a silent spinner.
+            if chunk.startswith("__ERROR__:"):
+                rest = chunk[len("__ERROR__:") :]
+                code, _, message = rest.partition(":")
+                yield _sse_event("error", f"{code}\n{message}")
                 continue
             yield _sse_event("chunk", chunk)
         yield _sse_event("done", "")

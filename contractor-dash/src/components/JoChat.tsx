@@ -3,9 +3,12 @@ import { MessageSquareText, Send, Loader2, RefreshCw, X, Maximize2, Minimize2 } 
 import { createJoSession, listJoSessions, sendJoMessage, streamJo, closeJoSession, type JoSession } from "../lib/jo";
 
 interface Message {
-  role: "user" | "jo";
+  role: "user" | "jo" | "error";
   text: string;
   ts: number;
+  // For error messages: short error code surfaced from backend (TIMEOUT,
+  // SPAWN, EXIT_139, etc.). Used in the error bubble label.
+  code?: string;
 }
 
 interface Props {
@@ -63,6 +66,32 @@ function saveCachedMessages(userId: string, messages: Message[]): void {
 }
 
 const FULLSCREEN_KEY = "jo_chat_fullscreen_v1";
+
+// Replaces the plain spinner with a "Jo is thinking… (Ns)" indicator.
+// After 30s, shifts to amber/concerned tone; claude replies usually land
+// in 10-40s, so >30s is worth flagging as "taking longer than usual."
+function ThinkingIndicator() {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setElapsed((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const slow = elapsed >= 30;
+  return (
+    <span
+      className={
+        "inline-flex items-center gap-1.5 text-xs " +
+        (slow ? "text-amber-400" : "text-zinc-400")
+      }
+    >
+      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+      <span>
+        {slow ? "Jo is still thinking" : "Jo is thinking"}
+        {elapsed > 0 ? ` · ${elapsed}s` : "…"}
+      </span>
+    </span>
+  );
+}
 
 function loadFullscreen(): boolean {
   try {
@@ -197,6 +226,31 @@ export default function JoChat({ open, onClose, userId }: Props) {
             return [...prev.slice(0, -1), { ...last, text: last.text + chunk }];
           }
           return [...prev, { role: "jo", text: chunk, ts: Date.now() }];
+        });
+      },
+      onTurnEnd: () => {
+        // Turn is done — stop the "thinking" timer and drop any empty
+        // placeholder Jo bubble that never filled in.
+        setBusy(false);
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === "jo" && !last.text) {
+            return prev.slice(0, -1);
+          }
+          return prev;
+        });
+      },
+      onTurnError: (code, message) => {
+        // Replace the trailing empty Jo-placeholder with an error bubble so
+        // Pasha sees WHY instead of an infinite spinner. Preserves any
+        // partial Jo text that did arrive before the error.
+        setBusy(false);
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === "jo" && !last.text) {
+            return [...prev.slice(0, -1), { role: "error", text: message, ts: Date.now(), code }];
+          }
+          return [...prev, { role: "error", text: message, ts: Date.now(), code }];
         });
       },
       onDone: () => {},
@@ -337,6 +391,24 @@ export default function JoChat({ open, onClose, userId }: Props) {
           <div className="text-sm text-zinc-500">Ask Jo anything.</div>
         )}
         {messages.map((m, i) => {
+          // Error bubble: distinct styling (amber) with the error code label.
+          // Same register in both sidebar + fullscreen — errors should look
+          // like errors, not like prose.
+          if (m.role === "error") {
+            return (
+              <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
+                <span className="shrink-0 mt-0.5">⚠</span>
+                <div className="flex-1">
+                  {m.code && (
+                    <div className="text-[11px] uppercase tracking-wide text-amber-400/80 font-semibold mb-0.5">
+                      Jo · {m.code}
+                    </div>
+                  )}
+                  <div className="whitespace-pre-wrap">{m.text}</div>
+                </div>
+              </div>
+            );
+          }
           // Full-screen mode adopts a claude.ai-style register:
           //   - Jo messages: serif body, no bubble (just text on bg)
           //   - User messages: light-tint bubble, still visually distinct
@@ -360,7 +432,7 @@ export default function JoChat({ open, onClose, userId }: Props) {
                       : "block max-w-full px-1 py-1 whitespace-pre-wrap text-zinc-100"
                   }
                 >
-                  {m.text || <Loader2 className="w-3.5 h-3.5 animate-spin inline" />}
+                  {m.text || <ThinkingIndicator />}
                 </div>
               </div>
             );
@@ -372,7 +444,7 @@ export default function JoChat({ open, onClose, userId }: Props) {
                   m.role === "user" ? "bg-blue-600 text-white" : "bg-zinc-800 text-zinc-100"
                 }`}
               >
-                {m.text || <Loader2 className="w-3.5 h-3.5 animate-spin inline" />}
+                {m.text || <ThinkingIndicator />}
               </div>
             </div>
           );
