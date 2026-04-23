@@ -52,6 +52,37 @@ JO_PENDING_FIRST_TURN_CONSUME_ON_READ = (
 # Setting this to a neutral dir the target user owns avoids that trap.
 JO_SPAWN_CWD = os.environ.get("JO_SPAWN_CWD", "/tmp")
 
+# Path to the canonical Jo system prompt. When set + readable, its contents
+# are passed via --system-prompt to every claude invocation so Jo boots with
+# her canonical persona (per project_canonical_jo). Empty → no system prompt
+# override; claude runs with its stock behavior.
+JO_SYSTEM_PROMPT_PATH = os.environ.get(
+    "JO_SYSTEM_PROMPT_PATH",
+    "/srv/town/shared/canonical-jo/current/system-prompt.md",
+)
+
+_cached_system_prompt: str | None = None
+
+
+def _load_system_prompt() -> str | None:
+    global _cached_system_prompt
+    if _cached_system_prompt is not None:
+        return _cached_system_prompt or None
+    try:
+        from pathlib import Path as _Path
+        p = _Path(JO_SYSTEM_PROMPT_PATH)
+        if not p.is_file():
+            _cached_system_prompt = ""
+            return None
+        txt = p.read_text(encoding="utf-8", errors="replace").strip()
+        _cached_system_prompt = txt
+        log.info("jo.system_prompt.loaded path=%s bytes=%d", p, len(txt))
+        return txt or None
+    except Exception as err:  # noqa: BLE001
+        log.warning("jo.system_prompt.skip err=%s", err)
+        _cached_system_prompt = ""
+        return None
+
 
 class JoClaudeMissing(RuntimeError):
     pass
@@ -189,10 +220,14 @@ class JoSessionManager:
         else:
             argv = [JO_CLAUDE_BIN]
 
+        argv += ["--print"]
+        system_prompt = _load_system_prompt()
+        if system_prompt:
+            argv += ["--system-prompt", system_prompt]
         if sess.first_turn_done:
-            argv += ["--print", "--resume", sess.claude_session_id, prompt]
+            argv += ["--resume", sess.claude_session_id, prompt]
         else:
-            argv += ["--print", "--session-id", sess.claude_session_id, prompt]
+            argv += ["--session-id", sess.claude_session_id, prompt]
             sess.first_turn_done = True
 
         try:
