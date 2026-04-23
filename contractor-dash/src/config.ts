@@ -4,6 +4,7 @@
 export interface ContractorConfig {
   slug: string;
   displayName: string;
+  pageTitle?: string;
   authWorkerUrl: string;
   apiBaseUrl: string;
   rpId: string;
@@ -20,6 +21,7 @@ function required(name: string, value: string | undefined): string {
 export const config: ContractorConfig = {
   slug: required("VITE_CONTRACTOR_SLUG", import.meta.env.VITE_CONTRACTOR_SLUG),
   displayName: required("VITE_CONTRACTOR_DISPLAY_NAME", import.meta.env.VITE_CONTRACTOR_DISPLAY_NAME),
+  pageTitle: import.meta.env.VITE_CONTRACTOR_PAGE_TITLE || undefined,
   authWorkerUrl: required("VITE_AUTH_WORKER_URL", import.meta.env.VITE_AUTH_WORKER_URL),
   apiBaseUrl: required("VITE_API_BASE_URL", import.meta.env.VITE_API_BASE_URL),
   rpId: required("VITE_RP_ID", import.meta.env.VITE_RP_ID),

@@ -5,7 +5,7 @@ import App from "./App";
 import { config } from "./config";
 import "./index.css";
 
-document.title = `${config.displayName} - Dashboard`;
+document.title = config.pageTitle ?? `${config.displayName} - Dashboard`;
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
