@@ -11,6 +11,8 @@
  *   x-ailedger-key: agl_sk_xxxx...
  */
 
+import { sha256hex, canonicalBodyHash } from './hash';
+
 export interface Env {
 	SUPABASE_URL: string;
 	SUPABASE_SERVICE_KEY: string;
@@ -144,7 +146,9 @@ export default {
 				method: request.method,
 				path: upstreamPath,
 				requestBody,
+				requestContentType: request.headers.get('content-type'),
 				responseBody,
+				responseContentType: upstreamResponse.headers.get('content-type'),
 				statusCode: upstreamResponse.status,
 				latencyMs,
 				startedAt,
@@ -443,18 +447,6 @@ function filterHeaders(headers: Headers, drop: string[]): Headers {
 		}
 	});
 	return out;
-}
-
-async function sha256hex(data: ArrayBuffer | null | string): Promise<string | null> {
-	if (!data) return null;
-	const buf = typeof data === 'string'
-		? new TextEncoder().encode(data)
-		: new Uint8Array(data);
-	if (buf.byteLength === 0) return null;
-	const hashBuffer = await crypto.subtle.digest('SHA-256', buf);
-	return Array.from(new Uint8Array(hashBuffer))
-		.map((b) => b.toString(16).padStart(2, '0'))
-		.join('');
 }
 
 async function resolveApiKey(env: Env, apiKey: string, ctx: ExecutionContext): Promise<{ customerId: string; systemId: string | null } | null> {
@@ -875,7 +867,9 @@ async function logInference({
 	method,
 	path,
 	requestBody,
+	requestContentType,
 	responseBody,
+	responseContentType,
 	statusCode,
 	latencyMs,
 	startedAt,
@@ -888,7 +882,9 @@ async function logInference({
 	method: string;
 	path: string;
 	requestBody: ArrayBuffer | null;
+	requestContentType: string | null;
 	responseBody: ArrayBuffer;
+	responseContentType: string | null;
 	statusCode: number;
 	latencyMs: number;
 	startedAt: string;
@@ -896,7 +892,13 @@ async function logInference({
 	customerId: string;
 	systemId: string | null;
 }): Promise<void> {
-	const [inputHash, outputHash] = await Promise.all([sha256hex(requestBody), sha256hex(responseBody)]);
+	// JSON bodies → RFC 8785 canonicalized SHA-256 (so semantically equal JSON
+	// from any SDK hashes to the same value). Non-JSON (SSE, binary, multipart)
+	// → raw-byte SHA-256. See src/hash.ts for the full rationale.
+	const [inputHash, outputHash] = await Promise.all([
+		canonicalBodyHash(requestBody, requestContentType),
+		canonicalBodyHash(responseBody, responseContentType),
+	]);
 
 	let modelName: string | null = null;
 	if (requestBody && requestBody.byteLength > 0) {
