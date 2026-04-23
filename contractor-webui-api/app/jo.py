@@ -311,7 +311,10 @@ class JoSessionManager:
         # First-turn directive is the union of:
         #   1. Any pending notifications for this contractor (consumed + deleted)
         #   2. The Mayor-staged pending-first-turn.md, if present
-        # If either is non-empty, we spawn claude immediately so the contractor
+        #   3. If resuming a prior conversation, a silent recap directive
+        #      (so the UI shows continuity — claude has the transcript, the
+        #      browser does not).
+        # If any piece is non-empty, spawn claude immediately so the contractor
         # sees a welcome response before typing anything.
         parts: list[str] = []
         notif_block = self._drain_notifications()
@@ -320,6 +323,20 @@ class JoSessionManager:
         first_turn = self._load_first_turn()
         if first_turn:
             parts.append(first_turn)
+        if resuming and not parts:
+            # Resume-only: no notifications, no staged welcome → emit a compact
+            # recap of the last turns so the UI shows the thread picks up
+            # cleanly. Keep it short; contractor doesn't want a novel.
+            parts.append(
+                "[OPERATOR DIRECTIVE — session resumed from prior conversation]\n"
+                "The contractor just reopened Jo. Your previous conversation "
+                "history is loaded. Emit a compact 2-3 line recap of what we "
+                "were last discussing in your voice, then wait for the "
+                "contractor's next message. Do not repeat the whole thread — "
+                "just enough to re-anchor. Example register: \"Picking up where "
+                "we left off — you were asking about <X>, I had offered <Y>. "
+                "What's next?\""
+            )
         if parts:
             directive = "\n\n---\n\n".join(parts)
             asyncio.create_task(self._run_claude(sess, directive))
