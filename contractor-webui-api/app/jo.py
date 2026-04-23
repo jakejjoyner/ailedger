@@ -90,6 +90,40 @@ JO_SYSTEM_PROMPT_PATH = os.environ.get(
 _cached_system_prompt: str | None = None
 
 
+def _plaza_addendum() -> str:
+    """Appended to the persona so Jo knows the absolute Plaza publish path.
+
+    Fresh-spawn Jo subprocesses were writing hails to /tmp/publish/ (a
+    relative "publish/" path off cwd=/tmp) because nothing in persona.md told
+    them the absolute path. system-prompt.md mentions Plaza generically but
+    says "the path your Mayor has configured" — which had no configured value
+    for web-UI Jo. Explicit path per-contractor fixes it.
+    """
+    try:
+        from .config import load_config as _load_config
+        cfg = _load_config()
+        slug = cfg.slug
+    except Exception:  # noqa: BLE001
+        slug = "pasha"
+    publish_dir = f"/srv/town/shared/publish/{slug}"
+    return (
+        "\n\n## Plaza publishing — explicit path\n\n"
+        "When you publish a hail (e.g., to your Mayor, to another silo), write "
+        f"the file as an ABSOLUTE PATH under `{publish_dir}/`. Use the "
+        "Write tool with a path like:\n\n"
+        f"  {publish_dir}/YYYYMMDD-HHMMSS-from-jo-<kebab-subject>.md\n\n"
+        "Never write to `/tmp/publish/` or any relative `publish/` path — "
+        "those don't reach Plaza. Your working directory is `/tmp` (a neutral "
+        "spawn dir); it is NOT the Plaza root. The absolute path above IS the "
+        "Plaza root for your silo; you have write access via the town-crew "
+        "group. Filename conventions:\n"
+        "- Prefix `YYYYMMDD-HHMMSS-from-jo-` (ISO-8601 local date, no colons)\n"
+        "- Kebab-case subject suffix\n"
+        "- Body starts with `To: <mayor-or-silo-name>` header line + blank line\n"
+        "- Sign `— Jo` at the bottom\n"
+    )
+
+
 def _load_system_prompt() -> str | None:
     global _cached_system_prompt
     if _cached_system_prompt is not None:
@@ -101,6 +135,9 @@ def _load_system_prompt() -> str | None:
             _cached_system_prompt = ""
             return None
         txt = p.read_text(encoding="utf-8", errors="replace").strip()
+        # Append Plaza-path addendum so Jo publishes hails to the absolute
+        # canonical path (not /tmp/publish/). See _plaza_addendum() docstring.
+        txt = txt + _plaza_addendum()
         _cached_system_prompt = txt
         log.info("jo.system_prompt.loaded path=%s bytes=%d", p, len(txt))
         return txt or None
