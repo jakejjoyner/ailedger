@@ -87,6 +87,12 @@ export interface JoStreamHandlers {
   onChunk: (text: string) => void;
   onDone: () => void;
   onError: (err: Error) => void;
+  // Structured turn-level events — each is optional so existing callers
+  // (and backward compat) keep working if they don't implement.
+  onTurnEnd?: () => void;
+  // Jo-side error during a turn (claude timeout / exit / spawn fail).
+  // Backend emits event: error\ndata: <code>\ndata: <message>.
+  onTurnError?: (code: string, message: string) => void;
 }
 
 export function streamJo(sessionId: string, handlers: JoStreamHandlers): { cancel: () => void } {
@@ -116,6 +122,12 @@ export function streamJo(sessionId: string, handlers: JoStreamHandlers): { cance
           const parsed = parseSseBlock(raw);
           if (parsed.event === "chunk" && parsed.data) {
             handlers.onChunk(parsed.data);
+          } else if (parsed.event === "turn_end") {
+            handlers.onTurnEnd?.();
+          } else if (parsed.event === "error") {
+            // Backend format: first line = code, rest = human message.
+            const [code, ...rest] = parsed.data.split("\n");
+            handlers.onTurnError?.(code || "UNKNOWN", rest.join("\n") || code);
           } else if (parsed.event === "done") {
             handlers.onDone();
             ctrl.abort();
