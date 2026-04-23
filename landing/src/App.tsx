@@ -434,15 +434,15 @@ function Pricing() {
     },
     {
       name: 'Evidence',
-      band: 'Mid-five-figure annual contract',
-      body: 'For the DPO, counsel, and engineering lead who need to hand an auditor a defensible artifact — not a screenshot. Ships alongside SOC 2 Type I (Q3 2026 target). Sales-assisted; exact list published alongside Type I landing.',
+      band: '$40,000 / year · annual contract',
+      body: 'For the DPO, counsel, and engineering lead who need to hand an auditor a defensible artifact — not a screenshot. Ships alongside SOC 2 Type I (Q3 2026 target). Design-partner pricing available for the first cohort.',
       cta: 'Apply for design partnership',
       href: '/contact',
       highlight: true,
     },
     {
       name: 'Audit',
-      band: 'Enterprise annual contract, custom-scoped',
+      band: 'From $80,000 / year · custom-scoped',
       body: 'For regulated verticals (BaFin MaRisk, FCA SYSC, AMF RG, Solvency II, MiCA) approaching the August 2026 deadline. Sectoral overlays configured to your binding retention floor; MSA with custom order form.',
       cta: 'Talk to us',
       href: '/contact',
@@ -1826,7 +1826,7 @@ function PricingPage() {
     },
     {
       name: 'Evidence',
-      band: 'Mid-five-figure annual contract — exact list published alongside SOC 2 Type I landing (target Q3 2026).',
+      band: '$40,000 / year · annual contract. Design-partner pricing ($24,000 / year) available for the first three cohort customers.',
       positioning: 'For the DPO, counsel, and engineering lead who need to hand an auditor a defensible artifact — not a screenshot.',
       bullets: [
         'Everything in Ledger, plus:',
@@ -1846,7 +1846,7 @@ function PricingPage() {
     },
     {
       name: 'Audit',
-      band: 'Enterprise annual contract, custom-scoped.',
+      band: 'From $80,000 / year · custom-scoped. Single-overlay deployments start at $80k; multi-overlay / strict-EU-only / extended-retention configurations scale with complexity.',
       positioning: 'For regulated enterprises whose InfoSec, legal, and sectoral-supervisor lines all want the same answer to the same question.',
       bullets: [
         'Everything in Evidence, plus:',
@@ -1917,6 +1917,10 @@ function PricingPage() {
   ]
 
   const faqItems = [
+    {
+      q: "How did you price Evidence at $40k/year and Audit at $80k+/year?",
+      a: "Three independent anchors converge. (1) Budget: the AI-compliance line item at a €10–100M ARR high-risk AI deployer is typically €30–100k/year — Evidence fits inside it. Enterprise GRC budgets at regulated entities run €200k–€1M; Audit sits at the Article-12-specific slice. (2) Alternatives: DIY Article 12 infrastructure costs €200–350k plus 6 months for mid-market, €500–800k plus 9 months for regulated enterprises. Drata/Vanta + manual AI-evidence gaps hits €80k/year without AI-specific depth. Evidence replaces that stack; Audit adds sectoral overlay. (3) Fine exposure: Article 99 caps Art. 12 violations at max(€15M, 3% of turnover). For regulated entities, sectoral supervisors (BaFin, FCA, AMF) layer additional penalties on top. Priced as insurance premium against realistic expected annual exposure. Competitive cross-check: Evidence sits in ValidMind's band (€30–80k); Audit sits at Monitaur's floor (€50–150k) and scales up with overlay complexity.",
+    },
     {
       q: "What's your retention policy?",
       a: "6-month retention baseline on Ledger and Evidence. Audit is configured to your sectoral overlay and can extend beyond 6 months — up to regulated-period maximums (typically 5-7 years depending on BaFin/FCA/AMF/Solvency II/MiCA scope). If your regulator requires longer than 6 months and you're on Ledger or Evidence, that's the conversation that moves you to Audit. A retention extension on Evidence is available under custom scope.",
