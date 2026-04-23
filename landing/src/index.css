@@ -38,11 +38,12 @@
   --accent-focus-ring:  rgba(79,70,229,0.55);
   --accent-glow-shadow: rgba(79,70,229,0.35);
 
-  /* Hero 'every' gradient — light→darker subtle, Cloudflare-style.
-     Starts lighter at top-left, goes mid-darker at bottom-right. Stops at
-     a middle tone (does not hit indigo-800); restraint over flashiness. */
-  --gradient-1:         #a78bfa;  /* violet-400 (light start) */
-  --gradient-2:         #7c3aed;  /* violet-600 (mid-dark stop) */
+  /* Hero 'every' gradient — 3-stop pronounced per Angela §1 spec.
+     Darker top-left (indigo-500), through violet-400, into a light
+     lift (indigo-100). Keeps all stops visible on white bg. */
+  --gradient-1:         #6366f1;  /* indigo-500 (dark start) */
+  --gradient-2:         #a78bfa;  /* violet-400 (mid) */
+  --gradient-3:         #e0e7ff;  /* indigo-100 (light lift) */
 
   /* Borders (inverted alpha for light surface) */
   --border-subtle:      rgba(0,0,0,0.05);
@@ -104,8 +105,9 @@
     --accent-focus-ring:  rgba(129,140,248,0.6);
     --accent-glow-shadow: rgba(79,70,229,0.6);
 
-    --gradient-1:         #c4b5fd;  /* violet-300 (light start on dark bg) */
-    --gradient-2:         #818cf8;  /* indigo-400 (mid stop; doesn't hit -600) */
+    --gradient-1:         #818cf8;  /* indigo-400 (dark start on dark bg) */
+    --gradient-2:         #c4b5fd;  /* violet-300 (mid) */
+    --gradient-3:         #ede9fe;  /* violet-50 (light lift; stays visible on dark bg) */
 
     --border-subtle:      rgba(255,255,255,0.05);
     --border:             rgba(255,255,255,0.06);
