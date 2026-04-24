@@ -350,39 +350,140 @@ class JoSessionManager:
         )
 
         # First-turn directive is the union of:
-        #   1. Any pending notifications for this contractor (consumed + deleted)
-        #   2. The Mayor-staged pending-first-turn.md, if present
-        #   3. If resuming a prior conversation, a silent recap directive
-        #      (so the UI shows continuity — claude has the transcript, the
-        #      browser does not).
-        # If any piece is non-empty, spawn claude immediately so the contractor
-        # sees a welcome response before typing anything.
+        #   1. Today's inbox digest (SESSION CONTEXT — passive state, not a
+        #      speak-now directive). Primary lever behind ai-1q1: ensures a
+        #      "what's the latest?" question lands with real state.
+        #   2. Any pending notifications for this contractor (consumed + deleted)
+        #   3. The Mayor-staged pending-first-turn.md, if present
+        #   4. A resume-recap directive (if resuming and no other speak-now
+        #      directive is present) — so the chat doesn't open silent.
+        #   5. A fresh-session welcome directive (if the digest is non-empty
+        #      and nothing else drives speech) — so today's state surfaces
+        #      on a brand-new session instead of waiting for the contractor
+        #      to ask.
+        # If any speak-now piece is present (or the digest exists), spawn
+        # claude immediately so the contractor sees a welcome before typing.
         parts: list[str] = []
+        digest_block = self._build_today_digest()
+        if digest_block:
+            parts.append(digest_block)
         notif_block = self._drain_notifications()
         if notif_block:
             parts.append(notif_block)
         first_turn = self._load_first_turn()
         if first_turn:
             parts.append(first_turn)
-        if resuming and not parts:
-            # Resume-only: no notifications, no staged welcome → emit a compact
-            # recap of the last turns so the UI shows the thread picks up
-            # cleanly. Keep it short; contractor doesn't want a novel.
-            parts.append(
-                "[OPERATOR DIRECTIVE — session resumed from prior conversation]\n"
-                "The contractor just reopened Jo. Your previous conversation "
-                "history is loaded. Emit a compact 2-3 line recap of what we "
-                "were last discussing in your voice, then wait for the "
-                "contractor's next message. Do not repeat the whole thread — "
-                "just enough to re-anchor. Example register: \"Picking up where "
-                "we left off — you were asking about <X>, I had offered <Y>. "
-                "What's next?\""
-            )
+
+        if not notif_block and not first_turn:
+            if resuming:
+                parts.append(
+                    "[OPERATOR DIRECTIVE — session resumed from prior conversation]\n"
+                    "The contractor just reopened Jo. Your previous conversation "
+                    "history is loaded"
+                    + (" alongside the today-state digest above" if digest_block else "")
+                    + ". Emit a compact 2-3 line recap of what we were last "
+                    "discussing in your voice, then wait for the contractor's "
+                    "next message. Do not repeat the whole thread — just enough "
+                    "to re-anchor. "
+                    + (
+                        "If today's digest includes unread items you have not "
+                        "already mentioned, surface them in one extra line. "
+                        if digest_block else ""
+                    )
+                    + "Example register: \"Picking up where we left off — you "
+                    "were asking about <X>, I had offered <Y>. What's next?\""
+                )
+            elif digest_block:
+                parts.append(
+                    "[OPERATOR DIRECTIVE — fresh session, today-state loaded]\n"
+                    "The contractor just opened Jo for the first time this "
+                    "session. The digest above IS your loaded state. Emit a "
+                    "brief welcome (1-2 lines) that surfaces what landed today "
+                    "in your voice, then wait for their message. Do NOT ask "
+                    "them to point you anywhere — the digest is the pointer. "
+                    "Example register: \"Morning. Today's mail: <compact "
+                    "summary>. What do you want to tackle?\""
+                )
+
         if parts:
             directive = "\n\n---\n\n".join(parts)
             asyncio.create_task(self._run_claude(sess, directive))
 
         return sess
+
+    # Cap on how many inbox items the today-digest surfaces in one block.
+    # 20 is generous for a day; beyond that, Jo-as-summarizer is a better
+    # fit than a raw list. The list is sorted newest-first so the cap
+    # truncates the oldest.
+    _TODAY_DIGEST_MAX_ITEMS = 20
+    # Digest window. Wider than strictly "today" so a contractor opening
+    # Jo late-night or early-morning still sees the most recent arrivals.
+    _TODAY_DIGEST_WINDOW_HOURS = 24
+
+    def _build_today_digest(self) -> str | None:
+        """Compose a session-open context block from the contractor's inbox.
+
+        Pulls addressable hails via ``list_inbox`` (same 6-gate filter the
+        SPA uses, so Jo and the contractor agree on what "today's inbox"
+        means) and renders a compact bullet list of the most recent items.
+        Returns ``None`` when the inbox yields nothing in the window.
+
+        Framed as ``[SESSION CONTEXT — ...]`` so Jo treats it as loaded
+        state, not a speak-now directive: a later "what's the latest?"
+        question can be answered from this without kicking the ask back
+        at the contractor. Full bodies live under ``publish_box``; Jo
+        can ``Read`` them on demand when a specific item needs depth.
+
+        Implementing the primary lever for ai-1q1.
+        """
+        try:
+            from datetime import datetime, timedelta, timezone
+            from .config import load_config as _load_config
+            from .inbox import list_inbox as _list_inbox
+
+            cfg = _load_config()
+            items = _list_inbox(cfg)
+            if not items:
+                return None
+            cutoff = datetime.now(timezone.utc) - timedelta(
+                hours=self._TODAY_DIGEST_WINDOW_HOURS,
+            )
+            recent: list = []
+            for e in items:
+                try:
+                    dt = datetime.fromisoformat(e.date.replace("Z", "+00:00"))
+                except ValueError:
+                    continue
+                if dt >= cutoff:
+                    recent.append(e)
+                if len(recent) >= self._TODAY_DIGEST_MAX_ITEMS:
+                    break
+            if not recent:
+                return None
+            bullets = [
+                f"- {e.date} [{'UNREAD' if e.unread else 'read'}] "
+                f"from {e.from_}: {e.subject} (id: {e.id})"
+                for e in recent
+            ]
+            log.info(
+                "jo.today_digest.loaded slug=%s items=%d window_h=%d",
+                cfg.slug, len(recent), self._TODAY_DIGEST_WINDOW_HOURS,
+            )
+            return (
+                "[SESSION CONTEXT — today's inbox digest]\n"
+                "Below are the contractor's addressable hails from the last "
+                f"{self._TODAY_DIGEST_WINDOW_HOURS}h. This IS your loaded "
+                "state for this session. If the contractor asks \"what's "
+                "the latest\", \"progress report\", \"catch me up\", etc., "
+                "answer from this — do NOT ask them to point you anywhere. "
+                f"Full bodies are readable under {cfg.publish_box}/<id>.md; "
+                "use your Read tool on demand for depth. Unread items are "
+                "the freshest signal.\n\n"
+                + "\n".join(bullets)
+            )
+        except Exception as err:  # noqa: BLE001
+            log.warning("jo.today_digest.skip err=%s", err)
+            return None
 
     def _drain_notifications(self) -> str | None:
         """Consume + delete all notification files for this contractor.
