@@ -81,7 +81,7 @@ function ThinkingIndicator() {
     <span
       className={
         "inline-flex items-center gap-1.5 text-xs " +
-        (slow ? "text-amber-400" : "text-zinc-400")
+        (slow ? "text-amber-400" : "text-muted")
       }
     >
       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -337,39 +337,38 @@ export default function JoChat({ open, onClose, userId }: Props) {
   if (!open) return null;
   return (
     <aside
-      style={fullscreen ? { background: "#18181b" } : undefined}
       className={
         fullscreen
-          ? "fixed inset-0 shadow-2xl flex flex-col z-50"
-          : "fixed right-0 top-0 bottom-0 w-full sm:w-[36rem] lg:w-[42rem] bg-zinc-900 border-l border-zinc-800 shadow-2xl flex flex-col z-20"
+          ? "fixed inset-0 shadow-2xl flex flex-col z-50 bg-paper"
+          : "fixed right-0 top-0 bottom-0 w-full sm:w-[36rem] lg:w-[42rem] bg-surface border-l border-line shadow-2xl flex flex-col z-20"
       }
     >
-      <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+      <header className="flex items-center justify-between px-5 py-3.5 border-b border-line-soft">
         <div className="flex items-center gap-2">
-          <MessageSquareText className="w-4 h-4 text-blue-400" />
-          <span className="text-sm font-semibold">Jo</span>
-          {session && <span className="text-xs text-zinc-500 font-mono">#{session.id.slice(0, 8)}</span>}
+          <MessageSquareText className="w-4 h-4 text-accent" />
+          <span className="text-sm font-semibold text-prose">Jo</span>
+          {session && <span className="text-[11px] text-subtle font-mono">#{session.id.slice(0, 8)}</span>}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             onClick={() => setFullscreen((v) => !v)}
             title={fullscreen ? "Exit full-screen (Esc)" : "Full-screen"}
             aria-label={fullscreen ? "Exit full-screen" : "Full-screen"}
-            className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded"
+            className="p-1.5 text-muted hover:text-prose hover:bg-surface-raised rounded transition-colors"
           >
             {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
           <button
             onClick={newChat}
             title="New chat"
-            className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded"
+            className="p-1.5 text-muted hover:text-prose hover:bg-surface-raised rounded transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
           <button
             onClick={onClose}
             title="Close panel"
-            className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded"
+            className="p-1.5 text-muted hover:text-prose hover:bg-surface-raised rounded transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -383,12 +382,40 @@ export default function JoChat({ open, onClose, userId }: Props) {
         className={
           fullscreen
             ? "flex-1 overflow-y-auto"
-            : "flex-1 overflow-y-auto p-4 space-y-4"
+            : "flex-1 overflow-y-auto px-5 py-5"
         }
       >
-        <div className={fullscreen ? "max-w-[768px] mx-auto px-6 pt-12 pb-4 space-y-4" : ""}>
+        <div
+          className={
+            fullscreen
+              ? "max-w-[720px] mx-auto px-6 pt-14 pb-6 space-y-5"
+              : "space-y-4"
+          }
+        >
         {messages.length === 0 && (
-          <div className="text-sm text-zinc-500">Ask Jo anything.</div>
+          <div
+            className={
+              fullscreen
+                ? "pt-8 pb-4 text-center"
+                : "pt-4"
+            }
+          >
+            <div
+              style={{ fontFamily: "var(--font-serif)" }}
+              className={
+                fullscreen
+                  ? "text-2xl text-prose leading-relaxed"
+                  : "text-base text-muted leading-relaxed"
+              }
+            >
+              How can I help?
+            </div>
+            {fullscreen && (
+              <div className="text-sm text-subtle mt-2">
+                Ask Jo anything.
+              </div>
+            )}
+          </div>
         )}
         {messages.map((m, i) => {
           // Error bubble: distinct styling (amber) with the error code label.
@@ -396,7 +423,7 @@ export default function JoChat({ open, onClose, userId }: Props) {
           // like errors, not like prose.
           if (m.role === "error") {
             return (
-              <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
+              <div key={i} className="flex items-start gap-2 px-3.5 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-200 text-sm">
                 <span className="shrink-0 mt-0.5">⚠</span>
                 <div className="flex-1">
                   {m.code && (
@@ -409,40 +436,27 @@ export default function JoChat({ open, onClose, userId }: Props) {
               </div>
             );
           }
-          // Full-screen mode adopts a claude.ai-style register:
-          //   - Jo messages: serif body, no bubble (just text on bg)
-          //   - User messages: light-tint bubble, still visually distinct
-          //   - Generous line-height + reading size
-          // Sidebar mode keeps the existing compact bubble UI.
-          if (fullscreen) {
-            const isUser = m.role === "user";
-            return (
-              <div key={i} className={isUser ? "text-right" : ""}>
-                <div
-                  style={{
-                    fontFamily: isUser
-                      ? "'Styrene A', Inter, -apple-system, BlinkMacSystemFont, sans-serif"
-                      : "'Tiempos', 'Copernicus', Georgia, 'Iowan Old Style', serif",
-                    fontSize: 17,
-                    lineHeight: 1.7,
-                  }}
-                  className={
-                    isUser
-                      ? "inline-block max-w-[85%] px-4 py-2.5 rounded-2xl whitespace-pre-wrap bg-indigo-500/15 text-zinc-100 border border-indigo-400/20"
-                      : "block max-w-full px-1 py-1 whitespace-pre-wrap text-zinc-100"
-                  }
-                >
-                  {m.text || <ThinkingIndicator />}
-                </div>
-              </div>
-            );
-          }
+          // Both modes adopt a claude.ai-style register now:
+          //   - Jo messages: serif body, no bubble (prose on bg)
+          //   - User messages: subtle warm-tint bubble
+          //   - Full-screen: larger size + generous column
+          //   - Sidebar: slightly compact but same typographic character
+          const isUser = m.role === "user";
+          const sizeProps = fullscreen
+            ? { fontSize: 17, lineHeight: 1.75 }
+            : { fontSize: 15.5, lineHeight: 1.65 };
           return (
-            <div key={i} className={m.role === "user" ? "text-right" : ""}>
+            <div key={i} className={isUser ? "text-right" : ""}>
               <div
-                className={`inline-block max-w-[85%] px-3 py-2 rounded-lg text-sm whitespace-pre-wrap ${
-                  m.role === "user" ? "bg-blue-600 text-white" : "bg-zinc-800 text-zinc-100"
-                }`}
+                style={{
+                  fontFamily: isUser ? "var(--font-sans)" : "var(--font-serif)",
+                  ...sizeProps,
+                }}
+                className={
+                  isUser
+                    ? "inline-block max-w-[85%] px-4 py-2.5 rounded-2xl whitespace-pre-wrap text-prose bg-accent-soft border border-accent/20 text-left"
+                    : "block max-w-full whitespace-pre-wrap text-prose px-0.5 py-0.5"
+                }
               >
                 {m.text || <ThinkingIndicator />}
               </div>
@@ -460,15 +474,17 @@ export default function JoChat({ open, onClose, userId }: Props) {
         }}
         className={
           fullscreen
-            ? "border-t border-zinc-800 py-3"
-            : "border-t border-zinc-800 p-3 flex items-end gap-2"
+            ? "border-t border-line-soft py-3"
+            : "border-t border-line-soft p-3 flex items-end gap-2"
         }
       >
-        <div className={
-          fullscreen
-            ? "max-w-[768px] mx-auto px-6 flex items-end gap-2 w-full"
-            : "contents"
-        }>
+        <div
+          className={
+            fullscreen
+              ? "max-w-[720px] mx-auto px-6 flex items-end gap-2 w-full"
+              : "contents"
+          }
+        >
         <textarea
           ref={(el) => {
             // Auto-grow: reset height then set to scrollHeight capped at 400px.
@@ -481,7 +497,7 @@ export default function JoChat({ open, onClose, userId }: Props) {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Message Jo…"
           style={{ minHeight: 120, maxHeight: 400 }}
-          className="flex-1 resize-none px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-md text-base leading-relaxed focus:outline-none focus:border-blue-500"
+          className="flex-1 resize-none px-4 py-3 bg-paper border border-line rounded-lg text-base leading-relaxed text-prose placeholder:text-subtle focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-colors"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -492,7 +508,7 @@ export default function JoChat({ open, onClose, userId }: Props) {
         <button
           type="submit"
           disabled={busy || !input.trim()}
-          className="p-2 bg-blue-600 hover:bg-blue-500 rounded-md disabled:opacity-50"
+          className="p-2.5 bg-accent hover:bg-accent-hover rounded-lg text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           title="Send (Enter)"
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

@@ -21,26 +21,28 @@ export default function DocView() {
 
   if (err) {
     return (
-      <div className="p-8">
-        <Link to="/app/docs" className="text-sm text-blue-400 flex items-center gap-1 mb-4">
+      <div className="px-8 py-10">
+        <Link to="/app/docs" className="text-sm text-accent hover:text-accent-hover flex items-center gap-1 mb-4">
           <ArrowLeft className="w-3 h-3" /> Reading room
         </Link>
         <p className="text-sm text-rose-400">{err}</p>
       </div>
     );
   }
-  if (!data) return <div className="p-8 text-zinc-500 text-sm">Loading…</div>;
+  if (!data) return <div className="px-8 py-10 text-subtle text-sm">Loading…</div>;
 
   return (
     <div className="h-full overflow-auto">
-      <div className="px-8 py-4 border-b border-zinc-800 sticky top-0 bg-zinc-950">
-        <Link to="/app/docs" className="text-sm text-blue-400 flex items-center gap-1 mb-2">
-          <ArrowLeft className="w-3 h-3" /> Reading room
-        </Link>
-        <h2 className="text-lg font-semibold">{data.title}</h2>
+      <div className="px-8 py-6 sticky top-0 bg-paper/95 backdrop-blur-sm border-b border-line-soft">
+        <div className="max-w-2xl mx-auto">
+          <Link to="/app/docs" className="text-xs text-muted hover:text-accent flex items-center gap-1 mb-2 transition-colors">
+            <ArrowLeft className="w-3 h-3" /> Reading room
+          </Link>
+          <h1 className="text-xl font-semibold tracking-tight text-prose">{data.title}</h1>
+        </div>
       </div>
       <article
-        className="prose-md px-8 py-6 max-w-3xl"
+        className="prose-editorial mx-auto px-8 py-10"
         dangerouslySetInnerHTML={{ __html: data.html }}
       />
     </div>

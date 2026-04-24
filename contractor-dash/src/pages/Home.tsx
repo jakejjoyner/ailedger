@@ -77,17 +77,17 @@ export default function Home({ session, onLogout }: Props) {
         open={navOpen}
         onClose={() => setNavOpen(false)}
       />
-      <main className="flex-1 overflow-hidden bg-zinc-950 relative">
+      <main className="flex-1 overflow-hidden bg-paper relative">
         {/* Mobile top bar with hamburger */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-zinc-800 bg-zinc-900">
+        <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-line-soft bg-surface">
           <button
             aria-label="Open navigation"
             onClick={() => setNavOpen(true)}
-            className="p-1.5 text-zinc-300 hover:bg-zinc-800 rounded-md"
+            className="p-1.5 text-muted hover:text-prose hover:bg-surface-raised rounded-md transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
-          <span className="text-sm font-semibold">{config.displayName}</span>
+          <span className="text-sm font-semibold text-prose">{config.displayName}</span>
         </div>
         <Routes>
           <Route index element={<InboxRoute />} />
@@ -101,13 +101,13 @@ export default function Home({ session, onLogout }: Props) {
           onClick={() => setJoOpen((v) => !v)}
           title={notifCount > 0 ? `Jo chat (${notifCount} pending)` : "Jo chat (press j)"}
           aria-label={notifCount > 0 ? `Open Jo chat, ${notifCount} pending` : "Open Jo chat"}
-          className="fixed right-4 bottom-4 md:right-6 md:bottom-6 h-12 w-12 rounded-full bg-blue-600 hover:bg-blue-500 shadow-lg flex items-center justify-center z-10"
+          className="fixed right-4 bottom-4 md:right-6 md:bottom-6 h-12 w-12 rounded-full bg-accent hover:bg-accent-hover text-white shadow-lg flex items-center justify-center z-10 transition-colors"
         >
           <MessageSquareText className="w-5 h-5" />
           {notifCount > 0 && (
             <span
               aria-hidden="true"
-              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-[18px] text-center shadow ring-2 ring-zinc-950"
+              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-semibold leading-[18px] text-center shadow ring-2 ring-paper"
             >
               {notifCount > 9 ? "9+" : notifCount}
             </span>
@@ -125,10 +125,10 @@ export default function Home({ session, onLogout }: Props) {
 
 function InboxRoute() {
   return (
-    <div className="p-6 md:p-8">
-      <h1 className="text-2xl font-semibold">Hello {config.displayName}</h1>
-      <p className="text-zinc-400 mt-2">Status: <span className="text-emerald-400 font-semibold">ACTIVE</span></p>
-      <p className="text-zinc-500 text-sm mt-6">
+    <div className="p-8 md:p-10 max-w-2xl">
+      <h1 className="text-2xl font-semibold tracking-tight text-prose">Hello {config.displayName}</h1>
+      <p className="text-muted mt-2">Status: <span className="text-emerald-400 font-semibold">ACTIVE</span></p>
+      <p className="text-subtle text-sm mt-6 leading-relaxed">
         Your inbox and reading room will appear here once the desktop API is reachable.
       </p>
     </div>
