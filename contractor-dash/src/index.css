@@ -1,27 +1,288 @@
 @import "tailwindcss";
 
+/* Editorial dark palette — warmed-black feel inspired by claude.ai.
+   Not pure #000; subtle brown-warm tint at low saturation so text
+   reads "on paper" rather than "on screen". Rust accent replaces
+   saturated blue at interaction points.
+
+   Typography: uses claude.ai's public fallback stack exactly. No
+   webfonts loaded — zero deps, zero font-flash. */
+@theme {
+  /* Background + surface tiers — same warm hue, stepped lightness.
+     bg-code is 2-3% darker than paper so code blocks "settle in" to
+     the page rather than popping forward as a distinct grey card. */
+  --color-paper: hsl(40 7% 9.5%);          /* #1A1714 */
+  --color-surface: hsl(40 6% 12%);         /* #1F1D19 */
+  --color-surface-raised: hsl(40 6% 15%);  /* #26231F */
+  --color-bg-code: hsl(40 8% 7%);          /* #141211 — darker than paper */
+
+  /* Text tier system (Angela voice-pass):
+     text-100 = full contrast (prose body, headings)
+     text-200 = ~55% contrast (metadata, timestamps, helper copy)
+     text-400 = ~35% contrast (quiet hints, placeholder) */
+  --color-text-100: hsl(42 8% 92%);        /* #EFEBE1 */
+  --color-text-200: hsl(42 7% 62%);        /* #A59E8D */
+  --color-text-400: hsl(40 6% 42%);        /* #6F685D */
+
+  /* Legacy aliases — keep for back-compat with existing class names. */
+  --color-prose: hsl(42 8% 92%);
+  --color-muted: hsl(42 7% 62%);
+  --color-subtle: hsl(40 6% 42%);
+
+  --color-line: hsl(40 8% 16%);            /* #2A2520 */
+  --color-line-soft: hsl(40 8% 13%);       /* #221F1B */
+
+  --color-accent: #cc7a5c;                 /* warm rust — our own value, not claude.ai's clay */
+  --color-accent-hover: #d88b6f;
+  --color-accent-soft: rgba(204, 122, 92, 0.14);
+  --color-accent-ring: rgba(204, 122, 92, 0.35);
+
+  /* Exact claude.ai public fallback stacks. No @font-face loads. */
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* UI chrome base: sans 14/500/1.5. Prose surfaces override to serif
+   17/400/1.7 via .prose-editorial / .jo-md. Discretionary ligatures
+   disabled (browser-inconsistent on long prose — Angela flagged this). */
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #0b0c0f;
-  color: #f2f2f3;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  background: var(--color-paper);
+  color: var(--color-prose);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "dlig" 0;
 }
 
-a { color: #4f8cff; }
+input, select, textarea, button {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
 
-/* Markdown reset inside rendered bodies. */
-.prose-md h1 { font-size: 1.5rem; margin: 1rem 0 0.5rem; font-weight: 600; }
-.prose-md h2 { font-size: 1.25rem; margin: 0.875rem 0 0.5rem; font-weight: 600; }
-.prose-md h3 { font-size: 1.125rem; margin: 0.75rem 0 0.5rem; font-weight: 600; }
-.prose-md p  { margin: 0.5rem 0; line-height: 1.55; }
-.prose-md ul, .prose-md ol { margin: 0.5rem 0; padding-left: 1.5rem; }
-.prose-md li { margin: 0.25rem 0; }
-.prose-md code { background: #14161b; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.9em; }
-.prose-md pre { background: #14161b; padding: 0.75rem; border-radius: 0.5rem; overflow-x: auto; }
-.prose-md pre code { background: transparent; padding: 0; }
-.prose-md blockquote { border-left: 3px solid #4f8cff; margin: 0.5rem 0; padding: 0.25rem 0 0.25rem 0.75rem; color: #a7a7ad; }
-.prose-md table { border-collapse: collapse; margin: 0.5rem 0; }
-.prose-md th, .prose-md td { border: 1px solid #242831; padding: 0.375rem 0.5rem; }
-.prose-md a { color: #4f8cff; text-decoration: underline; }
+/* Warm text selection — no browser-default blue. */
+::selection {
+  background: rgba(204, 122, 92, 0.22);
+  color: inherit;
+}
+
+a { color: var(--color-accent); }
+a:hover { color: var(--color-accent-hover); }
+
+/* Editorial prose — claude.ai register. Serif 17/1.7/400, warmed ink,
+   chapter-flow heading rhythm (loose above, tight below). */
+.prose-editorial {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.7;
+  letter-spacing: -0.011em;
+  color: var(--color-text-100);
+  max-width: 768px;
+  font-feature-settings: "dlig" 0;
+}
+.prose-editorial h1,
+.prose-editorial h2,
+.prose-editorial h3,
+.prose-editorial h4 {
+  font-family: var(--font-serif);
+  color: var(--color-text-100);
+  line-height: 1.25;
+}
+.prose-editorial h1 { font-size: 30px; font-weight: 400; letter-spacing: -0.02em;  margin: 2em 0 0.5em; }
+.prose-editorial h2 { font-size: 24px; font-weight: 400; letter-spacing: -0.015em; margin: 2.5em 0 0.5em; }
+.prose-editorial h3 { font-size: 20px; font-weight: 500; letter-spacing: -0.011em; margin: 1.75em 0 0.25em; }
+.prose-editorial h4 { font-size: 17px; font-weight: 500; letter-spacing: -0.011em; margin: 1.5em 0 0.25em; }
+
+/* Paragraphs: no first-line indent, mt 0 + mb ~1.1em so stacked ¶s
+   breathe without doubled margins. */
+.prose-editorial p {
+  margin: 0 0 1.1em;
+  text-indent: 0;
+}
+.prose-editorial ul,
+.prose-editorial ol {
+  margin: 0 0 1.1em;
+  padding-left: 1.5em;
+  list-style-position: outside;
+}
+.prose-editorial li { margin: 0.125rem 0; padding: 0.125rem 0; line-height: 1.7; }
+.prose-editorial li > ul,
+.prose-editorial li > ol { margin: 0.25rem 0; padding-left: 1.5em; }
+
+/* Code — settles into the page: subtle warm-dark bg, no bold, mono 14. */
+.prose-editorial code {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 400;
+  background: var(--color-bg-code);
+  color: var(--color-text-100);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.1875rem;
+}
+.prose-editorial pre {
+  font-family: var(--font-mono);
+  background: var(--color-bg-code);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 1.25rem 0;
+}
+.prose-editorial pre code { background: transparent; padding: 0; font-size: 1em; font-weight: 400; }
+.prose-editorial blockquote {
+  border-left: 2px solid var(--color-line);
+  margin: 1.25rem 0;
+  padding-left: 1rem;
+  color: var(--color-text-200);
+  font-style: normal;
+}
+.prose-editorial table { border-collapse: collapse; margin: 1.25rem 0; font-size: 15px; }
+.prose-editorial th,
+.prose-editorial td { border: 1px solid var(--color-line); padding: 0.5rem 0.75rem; }
+.prose-editorial th { background: var(--color-surface); font-weight: 500; }
+.prose-editorial a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 2px; }
+.prose-editorial a:hover { color: var(--color-accent-hover); }
+.prose-editorial hr {
+  border: none;
+  border-top: 1px solid var(--color-line);
+  margin: 2rem 0;
+}
+
+/* Rendered Jo messages — same claude.ai register, chat-tuned density. */
+.jo-md {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.7;
+  letter-spacing: -0.011em;
+  color: var(--color-text-100);
+  word-wrap: break-word;
+  max-width: 768px;
+  font-feature-settings: "dlig" 0;
+}
+.jo-md > :first-child { margin-top: 0; }
+.jo-md > :last-child { margin-bottom: 0; }
+.jo-md h1,
+.jo-md h2,
+.jo-md h3,
+.jo-md h4 {
+  font-family: var(--font-serif);
+  color: var(--color-text-100);
+  line-height: 1.25;
+}
+.jo-md h1 { font-size: 30px; font-weight: 400; letter-spacing: -0.02em;  margin: 1.5em 0 0.5em; }
+.jo-md h2 { font-size: 24px; font-weight: 400; letter-spacing: -0.015em; margin: 2em 0 0.5em; }
+.jo-md h3 { font-size: 20px; font-weight: 500; letter-spacing: -0.011em; margin: 1.5em 0 0.25em; }
+.jo-md h4 { font-size: 17px; font-weight: 500; letter-spacing: -0.011em; margin: 1.25em 0 0.25em; }
+.jo-md p  { margin: 0 0 1em; text-indent: 0; }
+.jo-md ul,
+.jo-md ol {
+  margin: 0 0 1em;
+  padding-left: 1.5em;
+  list-style-position: outside;
+}
+.jo-md li { margin: 0.125rem 0; padding: 0.125rem 0; line-height: 1.7; }
+.jo-md li > ul,
+.jo-md li > ol { margin: 0.25rem 0; padding-left: 1.5em; }
+.jo-md code {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 400;
+  background: var(--color-bg-code);
+  color: var(--color-text-100);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.1875rem;
+}
+.jo-md a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.jo-md a:hover { color: var(--color-accent-hover); }
+.jo-md blockquote {
+  border-left: 2px solid var(--color-line);
+  margin: 1rem 0;
+  padding-left: 1rem;
+  color: var(--color-text-200);
+  font-style: normal;
+}
+.jo-md table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 15px;
+}
+.jo-md th,
+.jo-md td { border: 1px solid var(--color-line); padding: 0.4rem 0.625rem; }
+.jo-md th { background: var(--color-surface); font-weight: 500; }
+.jo-md hr {
+  border: none;
+  border-top: 1px solid var(--color-line);
+  margin: 1.25rem 0;
+}
+
+/* Code fence — header strip settles into the bg-code layer rather than
+   jumping to surface-raised. Lang label + Copy button in the strip. */
+.jo-code-block {
+  margin: 1.25rem 0;
+  background: var(--color-bg-code);
+  border: 1px solid var(--color-line-soft);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  font-family: var(--font-mono);
+}
+.jo-code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 0.875rem;
+  background: transparent;
+  border-bottom: 1px solid var(--color-line-soft);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+}
+.jo-code-lang {
+  color: var(--color-text-200);
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+.jo-code-copy {
+  background: transparent;
+  border: none;
+  color: var(--color-text-200);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  transition: color 120ms, background 120ms;
+}
+.jo-code-copy:hover { color: var(--color-text-100); background: var(--color-surface-raised); }
+.jo-code-copy[data-copied="1"] { color: var(--color-accent); }
+.jo-code-block pre {
+  margin: 0;
+  padding: 1rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  background: transparent;
+}
+.jo-code-block pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 1em;
+  font-weight: 400;
+  color: var(--color-text-100);
+}

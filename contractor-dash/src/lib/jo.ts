@@ -64,6 +64,20 @@ export async function closeJoSession(sessionId: string): Promise<void> {
   });
 }
 
+/**
+ * Ask the backend to cancel the currently-streaming turn for this session.
+ * Returns the server response status; callers still need to abort their
+ * local SSE reader to stop consuming bytes.
+ */
+export async function cancelJoTurn(sessionId: string): Promise<void> {
+  await _fetchWithRefresh(`${config.apiBaseUrl}/jo/session/${encodeURIComponent(sessionId)}/cancel`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "content-type": "application/json" },
+    body: "{}",
+  });
+}
+
 export async function getJoNotificationsCount(): Promise<number> {
   const r = await _fetchWithRefresh(`${config.apiBaseUrl}/jo/notifications/count`, {
     credentials: "include",
