@@ -25,6 +25,7 @@ import {
   type JoSession,
 } from "../lib/jo";
 import { renderMarkdown } from "../lib/markdown";
+import { friendlyJoError } from "../lib/joErrors";
 import {
   loadSessionIndex,
   loadMessages,
@@ -52,10 +53,17 @@ const RAIL_KEY = "jo_chat_rail_v1";
 
 const STARTER_PROMPTS = [
   "What's on my plate today?",
-  "Summarize my unread inbox",
-  "Draft a reply to the most recent message",
-  "Find docs about onboarding",
+  "Summarize my unread messages",
+  "Draft a reply to the last message",
+  "Show me the latest docs",
 ];
+
+// Default the rail closed on narrow screens so the chat has full width on
+// a phone. Caller can still toggle with the button. SSR-safe check.
+function defaultRailOpen(): boolean {
+  if (typeof window === "undefined") return true;
+  return window.matchMedia?.("(min-width: 768px)").matches ?? true;
+}
 
 function loadPref(key: string, dflt: boolean): boolean {
   try {
@@ -108,22 +116,24 @@ function MessageBubble({ message, fullscreen, streaming, onCopy, onRetry, copied
   const m = message;
 
   if (m.role === "error") {
+    // Friendly, plain-English wording for the salesperson user. The raw
+    // code (if present) is dropped from the primary line; keep it in a
+    // title attribute so a technical reviewer can still inspect it.
+    const friendly = friendlyJoError(m.code || m.text);
     return (
-      <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-200 text-sm">
-        <span className="shrink-0 mt-0.5">⚠</span>
+      <div
+        className="flex items-start gap-2.5 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-100 text-sm"
+        title={m.code ? `code: ${m.code}` : undefined}
+      >
+        <span className="shrink-0 mt-0.5" aria-hidden="true">⚠</span>
         <div className="flex-1">
-          {m.code && (
-            <div className="text-[11px] uppercase tracking-wide text-amber-400/80 font-semibold mb-0.5">
-              Jo · {m.code}
-            </div>
-          )}
-          <div className="whitespace-pre-wrap">{m.text}</div>
+          <div className="whitespace-pre-wrap">{friendly}</div>
           {onRetry && (
             <button
               onClick={onRetry}
-              className="mt-2 inline-flex items-center gap-1 text-xs text-amber-300 hover:text-amber-100 transition-colors"
+              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-amber-100 bg-amber-500/15 hover:bg-amber-500/25 rounded-md transition-colors"
             >
-              <RotateCcw className="w-3 h-3" /> Retry
+              <RotateCcw className="w-3.5 h-3.5" /> Try again
             </button>
           )}
         </div>
@@ -138,21 +148,21 @@ function MessageBubble({ message, fullscreen, streaming, onCopy, onRetry, copied
 
   if (isUser) {
     return (
-      <div className="group text-right">
+      <div className="text-right">
         <div
           style={{ fontFamily: "var(--font-sans)", ...sizeProps }}
-          className="inline-block max-w-[85%] px-4 py-2.5 rounded-2xl whitespace-pre-wrap text-prose bg-accent-soft border border-accent/20 text-left"
+          className="inline-block max-w-[85%] px-4 py-3 rounded-2xl whitespace-pre-wrap text-prose bg-accent-soft border border-accent/20 text-left"
         >
           {m.text}
         </div>
-        <div className="mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="mt-1.5">
           <button
             onClick={onCopy}
-            className="inline-flex items-center gap-1 text-[11px] text-muted hover:text-prose transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted hover:text-prose hover:bg-surface-raised rounded-md transition-colors"
             aria-label="Copy message"
           >
-            {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-            {copied ? "Copied" : "Copy"}
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? "Copied" : "Copy message"}
           </button>
         </div>
       </div>
@@ -168,21 +178,21 @@ function MessageBubble({ message, fullscreen, streaming, onCopy, onRetry, copied
     );
   }
   return (
-    <div className="group block max-w-full">
+    <div className="block max-w-full">
       <div
         className="jo-md"
         style={sizeProps}
         dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }}
       />
       {!streaming && (
-        <div className="mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="mt-2">
           <button
             onClick={onCopy}
-            className="inline-flex items-center gap-1 text-[11px] text-muted hover:text-prose transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted hover:text-prose hover:bg-surface-raised rounded-md transition-colors"
             aria-label="Copy message"
           >
-            {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-            {copied ? "Copied" : "Copy"}
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? "Copied" : "Copy message"}
           </button>
         </div>
       )}
@@ -203,26 +213,28 @@ interface SessionRailProps {
 function SessionRail({ sessions, activeId, onSelect, onNew, onDelete, onClose, collapsed }: SessionRailProps) {
   if (collapsed) return null;
   return (
-    <div className="w-60 shrink-0 flex flex-col border-r border-line-soft bg-surface">
-      <div className="flex items-center gap-1 px-3 py-3">
+    <div className="w-64 shrink-0 flex flex-col border-r border-line-soft bg-surface">
+      <div className="flex items-center gap-1.5 px-3 py-3">
         <button
           onClick={onNew}
-          className="flex-1 flex items-center gap-2 px-3 py-2 text-sm text-prose bg-surface-raised hover:bg-accent-soft rounded-md transition-colors"
+          className="flex-1 flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium text-prose bg-surface-raised hover:bg-accent-soft rounded-lg transition-colors"
         >
-          <Plus className="w-4 h-4" /> New chat
+          <Plus className="w-4 h-4" /> Start a new chat
         </button>
         <button
           onClick={onClose}
           title="Hide chats"
           aria-label="Hide chats"
-          className="p-2 text-muted hover:text-prose hover:bg-surface-raised rounded-md transition-colors"
+          className="p-2.5 text-muted hover:text-prose hover:bg-surface-raised rounded-lg transition-colors"
         >
           <PanelLeft className="w-4 h-4" />
         </button>
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-0.5">
         {sessions.length === 0 && (
-          <div className="px-3 py-4 text-xs text-subtle">No chats yet.</div>
+          <div className="px-3 py-6 text-sm text-subtle text-center">
+            No chats yet.
+          </div>
         )}
         {sessions.map((s) => {
           const isActive = s.id === activeId;
@@ -230,7 +242,7 @@ function SessionRail({ sessions, activeId, onSelect, onNew, onDelete, onClose, c
             <div
               key={s.id}
               className={
-                "group relative flex items-center gap-2 pl-3 pr-1 py-2 rounded-md text-sm cursor-pointer transition-colors " +
+                "group relative flex items-center gap-2 pl-3 pr-1 py-2.5 rounded-lg text-sm cursor-pointer transition-colors " +
                 (isActive
                   ? "bg-accent-soft text-prose"
                   : "text-muted hover:bg-surface-raised hover:text-prose")
@@ -249,13 +261,15 @@ function SessionRail({ sessions, activeId, onSelect, onNew, onDelete, onClose, c
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDelete(s.id);
+                  if (window.confirm(`Delete this chat?\n\n"${s.title || "New chat"}"`)) {
+                    onDelete(s.id);
+                  }
                 }}
                 title="Delete chat"
                 aria-label="Delete chat"
-                className="opacity-0 group-hover:opacity-100 p-1 text-muted hover:text-rose-400 rounded transition-all"
+                className="opacity-60 md:opacity-0 md:group-hover:opacity-100 p-2 text-muted hover:text-rose-400 rounded transition-all"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
           );
@@ -275,7 +289,7 @@ export default function JoChat({ open, onClose, userId }: Props) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState<boolean>(() => loadPref(FULLSCREEN_KEY, false));
-  const [railOpen, setRailOpen] = useState<boolean>(() => loadPref(RAIL_KEY, true));
+  const [railOpen, setRailOpen] = useState<boolean>(() => loadPref(RAIL_KEY, defaultRailOpen()));
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [newBelow, setNewBelow] = useState(false);
 
@@ -699,48 +713,47 @@ export default function JoChat({ open, onClose, userId }: Props) {
         collapsed={railCollapsed || railEmpty && !activeId}
       />
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="flex items-center justify-between px-5 py-3.5 border-b border-line-soft">
-          <div className="flex items-center gap-2 min-w-0">
+        <header className="flex items-center justify-between px-4 py-3 border-b border-line-soft gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             {railCollapsed && (
               <button
                 onClick={() => setRailOpen(true)}
                 title="Show chats"
                 aria-label="Show chats"
-                className="p-1.5 text-muted hover:text-prose hover:bg-surface-raised rounded transition-colors"
+                className="p-2.5 text-muted hover:text-prose hover:bg-surface-raised rounded-lg transition-colors"
               >
-                <PanelLeft className="w-4 h-4" />
+                <PanelLeft className="w-5 h-5" />
               </button>
             )}
             <MessageSquareText className="w-4 h-4 text-accent shrink-0" />
             <span className="text-sm font-semibold text-prose truncate">
-              {sortedSessions.find((s) => s.id === activeId)?.title || "Jo"}
+              {sortedSessions.find((s) => s.id === activeId)?.title || "Chat with Jo"}
             </span>
-            {activeId && (
-              <span className="text-[11px] text-subtle font-mono shrink-0">#{activeId.slice(0, 8)}</span>
-            )}
           </div>
           <div className="flex items-center gap-0.5">
             <button
               onClick={() => setFullscreen((v) => !v)}
-              title={fullscreen ? "Exit full-screen (Esc)" : "Full-screen"}
-              aria-label={fullscreen ? "Exit full-screen" : "Full-screen"}
-              className="p-1.5 text-muted hover:text-prose hover:bg-surface-raised rounded transition-colors"
+              title={fullscreen ? "Exit full screen" : "Full screen"}
+              aria-label={fullscreen ? "Exit full screen" : "Full screen"}
+              className="p-2.5 text-muted hover:text-prose hover:bg-surface-raised rounded-lg transition-colors"
             >
-              {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              {fullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
             </button>
             <button
               onClick={newChat}
-              title="New chat"
-              className="p-1.5 text-muted hover:text-prose hover:bg-surface-raised rounded transition-colors"
+              title="Start a new chat"
+              aria-label="Start a new chat"
+              className="p-2.5 text-muted hover:text-prose hover:bg-surface-raised rounded-lg transition-colors"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-5 h-5" />
             </button>
             <button
               onClick={onClose}
-              title="Close panel"
-              className="p-1.5 text-muted hover:text-prose hover:bg-surface-raised rounded transition-colors"
+              title="Close"
+              aria-label="Close"
+              className="p-2.5 text-muted hover:text-prose hover:bg-surface-raised rounded-lg transition-colors"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </header>
@@ -771,23 +784,37 @@ export default function JoChat({ open, onClose, userId }: Props) {
                     className={
                       fullscreen
                         ? "text-2xl text-prose leading-relaxed text-center"
-                        : "text-base text-muted leading-relaxed"
+                        : "text-lg text-prose leading-relaxed"
                     }
                   >
-                    How can I help?
+                    Hi, I'm Jo. How can I help?
+                  </div>
+                  <div
+                    className={
+                      fullscreen
+                        ? "mt-2 text-sm text-muted text-center"
+                        : "mt-1 text-sm text-muted"
+                    }
+                  >
+                    Tap a question below, or type your own.
                   </div>
                   <div
                     className={
                       fullscreen
                         ? "mt-6 flex flex-wrap gap-2 justify-center"
-                        : "mt-4 flex flex-wrap gap-2"
+                        : "mt-4 flex flex-col gap-2"
                     }
                   >
                     {STARTER_PROMPTS.map((p) => (
                       <button
                         key={p}
                         onClick={() => void sendText(p)}
-                        className="px-3.5 py-2 text-sm text-prose bg-surface-raised hover:bg-accent-soft border border-line hover:border-accent/30 rounded-full transition-colors"
+                        className={
+                          (fullscreen
+                            ? "px-4 py-2.5 rounded-full "
+                            : "px-4 py-3 rounded-xl text-left ") +
+                          "text-sm text-prose bg-surface-raised hover:bg-accent-soft border border-line hover:border-accent/40 transition-colors"
+                        }
                       >
                         {p}
                       </button>
@@ -810,7 +837,12 @@ export default function JoChat({ open, onClose, userId }: Props) {
                   copied={copiedIdx === i}
                 />
               ))}
-              {err && <p className="text-xs text-rose-400">{err}</p>}
+              {err && (
+                <div className="flex items-start gap-2.5 px-4 py-3 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-100 text-sm">
+                  <span className="shrink-0 mt-0.5" aria-hidden="true">⚠</span>
+                  <div className="flex-1">{friendlyJoError(err)}</div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -847,16 +879,16 @@ export default function JoChat({ open, onClose, userId }: Props) {
                 textareaRef.current = el;
                 if (!el) return;
                 el.style.height = "auto";
-                const next = Math.min(Math.max(el.scrollHeight, 120), 400);
+                const next = Math.min(Math.max(el.scrollHeight, 110), 400);
                 el.style.height = `${next}px`;
               }}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder='Message Jo…  (press "/" to focus)'
-              style={{ minHeight: 120, maxHeight: 400 }}
-              className="flex-1 resize-none px-4 py-3 bg-paper border border-line rounded-lg text-base leading-relaxed text-prose placeholder:text-subtle focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-colors"
+              placeholder="Ask Jo anything…"
+              style={{ minHeight: 110, maxHeight: 400 }}
+              className="flex-1 resize-none px-4 py-3 bg-paper border border-line rounded-xl text-base leading-relaxed text-prose placeholder:text-subtle focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-colors"
               onKeyDown={(e) => {
-                // Enter or Cmd/Ctrl+Enter sends; Shift+Enter inserts newline.
+                // Enter sends; Shift+Enter inserts newline.
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   void submit();
@@ -867,9 +899,9 @@ export default function JoChat({ open, onClose, userId }: Props) {
               <button
                 type="button"
                 onClick={() => void stopGenerating()}
-                className="p-2.5 bg-surface-raised hover:bg-surface border border-line hover:border-muted text-prose rounded-lg transition-colors"
-                title="Stop generating"
-                aria-label="Stop generating"
+                className="h-12 w-12 flex items-center justify-center bg-surface-raised hover:bg-surface border border-line hover:border-muted text-prose rounded-xl transition-colors"
+                title="Stop"
+                aria-label="Stop"
               >
                 <Square className="w-4 h-4" fill="currentColor" />
               </button>
@@ -877,10 +909,11 @@ export default function JoChat({ open, onClose, userId }: Props) {
               <button
                 type="submit"
                 disabled={!input.trim()}
-                className="p-2.5 bg-accent hover:bg-accent-hover rounded-lg text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                title="Send (Enter or Cmd+Enter)"
+                className="h-12 w-12 flex items-center justify-center bg-accent hover:bg-accent-hover rounded-xl text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                title="Send"
+                aria-label="Send"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-5 h-5" />
               </button>
             )}
           </div>
