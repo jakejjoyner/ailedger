@@ -47,7 +47,12 @@ export default function Inbox() {
     <div className="h-full overflow-auto">
       <div className="px-6 md:px-8 py-5 sticky top-0 bg-paper/95 backdrop-blur-sm border-b border-line-soft">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-xl font-semibold tracking-tight text-prose">Inbox</h1>
+          <h1
+            className="text-prose"
+            style={{ fontFamily: "var(--font-serif)", fontSize: 30, fontWeight: 400, lineHeight: 1.3, letterSpacing: "-0.01em" }}
+          >
+            Inbox
+          </h1>
         </div>
       </div>
       <ul className="max-w-4xl mx-auto px-2 md:px-4 py-2">
@@ -60,9 +65,9 @@ export default function Inbox() {
               }`}
             >
               <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${m.unread ? "bg-accent" : "bg-transparent"}`} />
-              <div className="w-24 text-[11px] uppercase tracking-wider text-subtle shrink-0">{m.from}</div>
-              <div className={`flex-1 truncate ${m.unread ? "font-semibold" : ""}`}>{m.subject}</div>
-              <div className="text-xs text-subtle shrink-0">{formatDate(m.date)}</div>
+              <div className="w-24 uppercase tracking-wider text-subtle shrink-0" style={{ fontSize: 11, fontWeight: 500 }}>{m.from}</div>
+              <div className="flex-1 truncate" style={{ fontSize: 14, fontWeight: m.unread ? 600 : 500 }}>{m.subject}</div>
+              <div className="text-subtle shrink-0" style={{ fontSize: 13, fontWeight: 400 }}>{formatDate(m.date)}</div>
             </Link>
           </li>
         ))}

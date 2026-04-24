@@ -105,14 +105,13 @@ function ThinkingIndicator() {
 
 interface MessageBubbleProps {
   message: StoredMessage;
-  fullscreen: boolean;
   streaming: boolean;
   onCopy: () => void;
   onRetry?: () => void;
   copied: boolean;
 }
 
-function MessageBubble({ message, fullscreen, streaming, onCopy, onRetry, copied }: MessageBubbleProps) {
+function MessageBubble({ message, streaming, onCopy, onRetry, copied }: MessageBubbleProps) {
   const m = message;
 
   if (m.role === "error") {
@@ -142,15 +141,16 @@ function MessageBubble({ message, fullscreen, streaming, onCopy, onRetry, copied
   }
 
   const isUser = m.role === "user";
-  const sizeProps = fullscreen
-    ? { fontSize: 17, lineHeight: 1.75 }
-    : { fontSize: 15.5, lineHeight: 1.65 };
+  // claude.ai: message body serif 17/1.7/400. User bubble sans 17/1.7/500
+  // to differentiate speaker without shrinking the reading size.
+  const serifProps = { fontSize: 17, lineHeight: 1.7, fontWeight: 400 };
+  const userSansProps = { fontSize: 17, lineHeight: 1.7, fontWeight: 500 };
 
   if (isUser) {
     return (
       <div className="text-right">
         <div
-          style={{ fontFamily: "var(--font-sans)", ...sizeProps }}
+          style={{ fontFamily: "var(--font-sans)", ...userSansProps }}
           className="inline-block max-w-[85%] px-4 py-3 rounded-2xl whitespace-pre-wrap text-prose bg-accent-soft border border-accent/20 text-left"
         >
           {m.text}
@@ -181,7 +181,7 @@ function MessageBubble({ message, fullscreen, streaming, onCopy, onRetry, copied
     <div className="block max-w-full">
       <div
         className="jo-md"
-        style={sizeProps}
+        style={serifProps}
         dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }}
       />
       {!streaming && (
@@ -773,18 +773,23 @@ export default function JoChat({ open, onClose, userId }: Props) {
             <div
               className={
                 fullscreen
-                  ? "max-w-[720px] mx-auto px-6 pt-14 pb-6 space-y-5"
+                  ? "max-w-[768px] mx-auto px-6 pt-14 pb-6 space-y-5"
                   : "space-y-4"
               }
             >
               {messages.length === 0 && (
                 <div className={fullscreen ? "pt-8 pb-4" : "pt-2"}>
                   <div
-                    style={{ fontFamily: "var(--font-serif)" }}
+                    style={{
+                      fontFamily: "var(--font-serif)",
+                      fontSize: fullscreen ? 30 : 24,
+                      fontWeight: 400,
+                      lineHeight: 1.3,
+                    }}
                     className={
                       fullscreen
-                        ? "text-2xl text-prose leading-relaxed text-center"
-                        : "text-lg text-prose leading-relaxed"
+                        ? "text-prose text-center"
+                        : "text-prose"
                     }
                   >
                     Hi, I'm Jo. How can I help?
@@ -792,9 +797,10 @@ export default function JoChat({ open, onClose, userId }: Props) {
                   <div
                     className={
                       fullscreen
-                        ? "mt-2 text-sm text-muted text-center"
-                        : "mt-1 text-sm text-muted"
+                        ? "mt-2 text-muted text-center"
+                        : "mt-1 text-muted"
                     }
+                    style={{ fontWeight: 400 }}
                   >
                     Tap a question below, or type your own.
                   </div>
@@ -813,7 +819,7 @@ export default function JoChat({ open, onClose, userId }: Props) {
                           (fullscreen
                             ? "px-4 py-2.5 rounded-full "
                             : "px-4 py-3 rounded-xl text-left ") +
-                          "text-sm text-prose bg-surface-raised hover:bg-accent-soft border border-line hover:border-accent/40 transition-colors"
+                          "text-prose bg-surface-raised hover:bg-accent-soft border border-line hover:border-accent/40 transition-colors"
                         }
                       >
                         {p}
@@ -826,7 +832,6 @@ export default function JoChat({ open, onClose, userId }: Props) {
                 <MessageBubble
                   key={i}
                   message={m}
-                  fullscreen={fullscreen}
                   streaming={busy && i === messages.length - 1 && m.role === "jo"}
                   onCopy={() => onCopyMessage(i)}
                   onRetry={
@@ -870,7 +875,7 @@ export default function JoChat({ open, onClose, userId }: Props) {
           <div
             className={
               fullscreen
-                ? "max-w-[720px] mx-auto px-6 flex items-end gap-2 w-full"
+                ? "max-w-[768px] mx-auto px-6 flex items-end gap-2 w-full"
                 : "flex items-end gap-2"
             }
           >
@@ -885,8 +890,15 @@ export default function JoChat({ open, onClose, userId }: Props) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask Jo anything…"
-              style={{ minHeight: 110, maxHeight: 400 }}
-              className="flex-1 resize-none px-4 py-3 bg-paper border border-line rounded-xl text-base leading-relaxed text-prose placeholder:text-subtle focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-colors"
+              style={{
+                minHeight: 110,
+                maxHeight: 400,
+                fontFamily: "var(--font-serif)",
+                fontSize: 17,
+                lineHeight: 1.7,
+                fontWeight: 400,
+              }}
+              className="flex-1 resize-none px-4 py-3 bg-paper border border-line rounded-xl text-prose placeholder:text-subtle focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-colors"
               onKeyDown={(e) => {
                 // Enter sends; Shift+Enter inserts newline.
                 if (e.key === "Enter" && !e.shiftKey) {

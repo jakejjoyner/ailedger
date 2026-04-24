@@ -34,11 +34,16 @@ export default function DocView() {
   return (
     <div className="h-full overflow-auto">
       <div className="px-8 py-6 sticky top-0 bg-paper/95 backdrop-blur-sm border-b border-line-soft">
-        <div className="max-w-2xl mx-auto">
-          <Link to="/app/docs" className="text-xs text-muted hover:text-accent flex items-center gap-1 mb-2 transition-colors">
-            <ArrowLeft className="w-3 h-3" /> Reading room
+        <div className="max-w-[768px] mx-auto">
+          <Link to="/app/docs" className="text-muted hover:text-accent inline-flex items-center gap-1 mb-3 transition-colors" style={{ fontSize: 14, fontWeight: 500 }}>
+            <ArrowLeft className="w-3.5 h-3.5" /> Reading room
           </Link>
-          <h1 className="text-xl font-semibold tracking-tight text-prose">{data.title}</h1>
+          <h1
+            className="text-prose"
+            style={{ fontFamily: "var(--font-serif)", fontSize: 30, fontWeight: 400, lineHeight: 1.3, letterSpacing: "-0.01em" }}
+          >
+            {data.title}
+          </h1>
         </div>
       </div>
       <article

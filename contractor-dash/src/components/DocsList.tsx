@@ -142,8 +142,13 @@ export default function DocsList({ userId }: Props) {
       <div className="px-6 md:px-8 py-5 sticky top-0 bg-paper/95 backdrop-blur-sm border-b border-line-soft z-10">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-            <h1 className="text-xl font-semibold tracking-tight text-prose">Reading room</h1>
-            <span className="text-xs text-subtle">
+            <h1
+              className="text-prose"
+              style={{ fontFamily: "var(--font-serif)", fontSize: 30, fontWeight: 400, lineHeight: 1.3, letterSpacing: "-0.01em" }}
+            >
+              Reading room
+            </h1>
+            <span className="text-subtle" style={{ fontSize: 13, fontWeight: 400 }}>
               {query ? `${shown} of ${total}` : `${total} documents`}
             </span>
           </div>
@@ -203,11 +208,11 @@ export default function DocsList({ userId }: Props) {
                 >
                   <BookOpen className={"w-4 h-4 shrink-0 " + (isLastOpened ? "text-accent" : "text-subtle")} />
                   <div className="flex-1 min-w-0">
-                    <div className="truncate text-prose">{d.title}</div>
-                    <div className="text-xs text-subtle truncate font-mono mt-0.5">{d.id}</div>
+                    <div className="truncate text-prose" style={{ fontSize: 14, fontWeight: 500 }}>{d.title}</div>
+                    <div className="truncate text-subtle mt-0.5" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 400 }}>{d.id}</div>
                   </div>
                   {isLastOpened && (
-                    <span className="text-[10px] text-accent uppercase tracking-wider shrink-0 font-semibold" aria-label="Last read">
+                    <span className="text-accent shrink-0 uppercase tracking-wider" style={{ fontSize: 11, fontWeight: 500 }} aria-label="Last read">
                       Last read
                     </span>
                   )}

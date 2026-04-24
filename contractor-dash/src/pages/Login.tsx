@@ -39,12 +39,17 @@ export default function Login({ onLogin }: Props) {
   return (
     <div className="flex h-full items-center justify-center p-6 bg-paper">
       <div className="w-full max-w-md bg-surface border border-line rounded-xl shadow-2xl p-8">
-        <h1 className="text-xl font-semibold tracking-tight text-prose mb-1">Sign in</h1>
-        <p className="text-sm text-muted mb-6">
+        <h1
+          className="text-prose mb-1"
+          style={{ fontFamily: "var(--font-serif)", fontSize: 30, fontWeight: 400, lineHeight: 1.3, letterSpacing: "-0.01em" }}
+        >
+          Sign in
+        </h1>
+        <p className="text-muted mb-6" style={{ fontSize: 14, fontWeight: 400 }}>
           {config.displayName} · <span className="text-subtle">{config.dashOrigin.replace(/^https?:\/\//, "")}</span>
         </p>
 
-        <label className="block text-xs text-muted mb-2" htmlFor="email">
+        <label className="block text-muted mb-2" htmlFor="email" style={{ fontSize: 13, fontWeight: 500 }}>
           Email
         </label>
         <input
@@ -55,14 +60,16 @@ export default function Login({ onLogin }: Props) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          className="w-full px-3 py-2 bg-paper border border-line rounded-md text-sm text-prose placeholder:text-subtle focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-colors"
+          className="w-full px-3 py-2.5 bg-paper border border-line rounded-md text-prose placeholder:text-subtle focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-colors"
+          style={{ fontSize: 14, fontWeight: 500 }}
         />
 
         <button
           type="button"
           onClick={handleLogin}
           disabled={busy !== null}
-          className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-md text-sm font-semibold disabled:opacity-50 transition-colors"
+          className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-md disabled:opacity-50 transition-colors"
+          style={{ fontSize: 14, fontWeight: 500 }}
         >
           {busy === "login" ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
           Sign in with passkey
@@ -72,19 +79,20 @@ export default function Login({ onLogin }: Props) {
           type="button"
           onClick={handleRegister}
           disabled={busy !== null || email.trim().length === 0}
-          className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-transparent border border-line hover:border-muted text-prose rounded-md text-sm disabled:opacity-50 transition-colors"
+          className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-transparent border border-line hover:border-muted text-prose rounded-md disabled:opacity-50 transition-colors"
+          style={{ fontSize: 14, fontWeight: 500 }}
         >
           {busy === "register" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
           Register a passkey
         </button>
 
         {err && (
-          <p className="mt-4 text-sm text-rose-400" role="alert">
+          <p className="mt-4 text-rose-400" role="alert" style={{ fontSize: 14, fontWeight: 400 }}>
             {err}
           </p>
         )}
 
-        <p className="mt-6 text-xs text-subtle leading-relaxed">
+        <p className="mt-6 text-subtle" style={{ fontSize: 13, fontWeight: 400, lineHeight: 1.6 }}>
           Passkeys replace passwords. Your device (Touch ID / Face ID / Windows Hello) stores a
           cryptographic key scoped to {config.rpId}; it never leaves your device.
         </p>

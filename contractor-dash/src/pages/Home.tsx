@@ -125,10 +125,17 @@ export default function Home({ session, onLogout }: Props) {
 
 function InboxRoute() {
   return (
-    <div className="p-8 md:p-10 max-w-2xl">
-      <h1 className="text-2xl font-semibold tracking-tight text-prose">Hello {config.displayName}</h1>
-      <p className="text-muted mt-2">Status: <span className="text-emerald-400 font-semibold">ACTIVE</span></p>
-      <p className="text-subtle text-sm mt-6 leading-relaxed">
+    <div className="p-8 md:p-10 max-w-[768px]">
+      <h1
+        className="text-prose"
+        style={{ fontFamily: "var(--font-serif)", fontSize: 30, fontWeight: 400, lineHeight: 1.3, letterSpacing: "-0.01em" }}
+      >
+        Hello {config.displayName}
+      </h1>
+      <p className="text-muted mt-3" style={{ fontWeight: 400 }}>
+        Status: <span className="text-emerald-400" style={{ fontWeight: 600 }}>ACTIVE</span>
+      </p>
+      <p className="text-subtle mt-6" style={{ fontFamily: "var(--font-serif)", fontSize: 17, fontWeight: 400, lineHeight: 1.7 }}>
         Your inbox and reading room will appear here once the desktop API is reachable.
       </p>
     </div>
