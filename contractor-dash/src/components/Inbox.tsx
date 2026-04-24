@@ -49,7 +49,7 @@ export default function Inbox() {
         <div className="max-w-4xl mx-auto">
           <h1
             className="text-prose"
-            style={{ fontFamily: "var(--font-serif)", fontSize: 30, fontWeight: 400, lineHeight: 1.3, letterSpacing: "-0.01em" }}
+            style={{ fontFamily: "var(--font-serif)", fontSize: 30, fontWeight: 400, lineHeight: 1.25, letterSpacing: "-0.02em" }}
           >
             Inbox
           </h1>

@@ -784,7 +784,8 @@ export default function JoChat({ open, onClose, userId }: Props) {
                       fontFamily: "var(--font-serif)",
                       fontSize: fullscreen ? 30 : 24,
                       fontWeight: 400,
-                      lineHeight: 1.3,
+                      lineHeight: 1.25,
+                      letterSpacing: fullscreen ? "-0.02em" : "-0.015em",
                     }}
                     className={
                       fullscreen

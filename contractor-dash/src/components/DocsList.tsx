@@ -144,7 +144,7 @@ export default function DocsList({ userId }: Props) {
           <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
             <h1
               className="text-prose"
-              style={{ fontFamily: "var(--font-serif)", fontSize: 30, fontWeight: 400, lineHeight: 1.3, letterSpacing: "-0.01em" }}
+              style={{ fontFamily: "var(--font-serif)", fontSize: 30, fontWeight: 400, lineHeight: 1.25, letterSpacing: "-0.02em" }}
             >
               Reading room
             </h1>

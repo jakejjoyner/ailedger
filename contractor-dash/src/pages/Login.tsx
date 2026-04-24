@@ -41,7 +41,7 @@ export default function Login({ onLogin }: Props) {
       <div className="w-full max-w-md bg-surface border border-line rounded-xl shadow-2xl p-8">
         <h1
           className="text-prose mb-1"
-          style={{ fontFamily: "var(--font-serif)", fontSize: 30, fontWeight: 400, lineHeight: 1.3, letterSpacing: "-0.01em" }}
+          style={{ fontFamily: "var(--font-serif)", fontSize: 30, fontWeight: 400, lineHeight: 1.25, letterSpacing: "-0.02em" }}
         >
           Sign in
         </h1>
