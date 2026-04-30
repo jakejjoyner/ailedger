@@ -31,7 +31,7 @@
   // Each environment owns its own D1, KV, and secrets. Secrets required per env:
   //   SESSION_JWT_SECRET        (>= 32 bytes random; distinct per contractor)
   //   REFRESH_JWT_SECRET        (>= 32 bytes random; distinct per contractor)
-  //   RESEND_API_KEY            (for magic-link email)
+  //   GMAIL_API_CREDENTIALS     (for magic-link email — pending Workspace setup; see memory/feedback_email_stack_google_only.md)
   //   CONTRACTOR_ALLOWED_EMAILS (comma-separated allowlist; required — empty = deny-all)
   //
   // Bootstrap commands for env.pasha:
@@ -53,7 +53,7 @@
   // Staging secrets MUST be distinct from production and from any contractor env:
   //   wrangler secret put SESSION_JWT_SECRET --env staging
   //   wrangler secret put REFRESH_JWT_SECRET --env staging
-  //   wrangler secret put RESEND_API_KEY --env staging
+  //   wrangler secret put GMAIL_API_CREDENTIALS --env staging   # pending Workspace
   //   wrangler secret put CONTRACTOR_ALLOWED_EMAILS --env staging
   "env": {
     "staging": {
@@ -109,7 +109,7 @@
       //   wrangler d1 execute contractor-auth-staging-pasha --env staging-pasha --remote --file=./schema.sql
       //   wrangler secret put SESSION_JWT_SECRET --env staging-pasha       # MUST differ from env.pasha
       //   wrangler secret put REFRESH_JWT_SECRET --env staging-pasha       # MUST differ from env.pasha
-      //   wrangler secret put RESEND_API_KEY --env staging-pasha
+      //   wrangler secret put GMAIL_API_CREDENTIALS --env staging-pasha     # pending Workspace
       //   wrangler secret put CONTRACTOR_ALLOWED_EMAILS --env staging-pasha  # jjoyner+bob only
       //   wrangler deploy --env staging-pasha
       "workers_dev": true,

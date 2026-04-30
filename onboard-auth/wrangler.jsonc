@@ -34,7 +34,7 @@
   // Non-secret config. Secrets go via `wrangler secret put`:
   //   SESSION_JWT_SECRET   (>= 32 bytes random)
   //   REFRESH_JWT_SECRET   (>= 32 bytes random, distinct from SESSION_JWT_SECRET)
-  //   RESEND_API_KEY       (for magic-link email)
+  //   GMAIL_API_CREDENTIALS (for magic-link email — pending Workspace setup; see memory/feedback_email_stack_google_only.md)
   //   ADMIN_BOOTSTRAP_TOKEN (one-shot token for /admin/grant before first admin exists)
   "vars": {
     "RP_ID": "joynerventures.com",
@@ -65,7 +65,7 @@
   // Staging secrets MUST be distinct from production:
   //   wrangler secret put SESSION_JWT_SECRET --env staging
   //   wrangler secret put REFRESH_JWT_SECRET --env staging
-  //   wrangler secret put RESEND_API_KEY --env staging
+  //   wrangler secret put GMAIL_API_CREDENTIALS --env staging   # pending Workspace
   //   wrangler secret put ADMIN_BOOTSTRAP_TOKEN --env staging
   "env": {
     "staging": {

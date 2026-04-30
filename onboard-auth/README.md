@@ -1,3 +1,7 @@
+> ⚠ **DEPRECATED 2026-04-30** — Per Jake universal directive, the email stack is now **Google only**. Brevo and Resend are being ripped out (account closures pending). Do NOT follow any setup steps in this document that reference Brevo, Resend, or any non-Google email relay. The Gmail-API replacement runbook supersedes this. See `~/gt-lab/memory/feedback_email_stack_google_only.md`.
+
+---
+
 # onboard-auth
 
 Standalone, project-scoped login service. **Not coupled to AILedger.** Any

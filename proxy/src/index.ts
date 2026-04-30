@@ -18,7 +18,6 @@ export interface Env {
 	SUPABASE_SERVICE_KEY: string;
 	STRIPE_SECRET_KEY: string;
 	STRIPE_WEBHOOK_SECRET: string;
-	RESEND_API_KEY: string;
 	SUPABASE_HOOK_SECRET: string;
 	AILEDGER_CACHE: KVNamespace;
 }
@@ -31,8 +30,10 @@ const PROVIDERS: Record<string, string> = {
 };
 
 export default {
-	async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-		ctx.waitUntil(runDripEmails(env));
+	async scheduled(_event: ScheduledEvent, _env: Env, _ctx: ExecutionContext): Promise<void> {
+		// Drip email sequences removed 2026-04-30 (Jake universal directive — Google-only email stack).
+		// Will be reintroduced via Gmail API once Google Workspace is provisioned for ailedger.dev.
+		// See memory/feedback_email_stack_google_only.md.
 	},
 
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -621,90 +622,12 @@ async function handleSignupHook(request: Request, env: Env): Promise<Response> {
 		return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
 	}
 
-	if (actionType === 'recovery') {
-		await sendPasswordResetEmail(env, email, magicLink);
-	} else {
-		// signup, magiclink, email_change, etc.
-		await sendWelcomeEmail(env, email, null, name, magicLink);
-	}
+	// Email send paths (welcome / password-reset) removed 2026-04-30 per Jake universal directive
+	// — Google-only email stack. Will be reintroduced via Gmail API once Workspace lands.
+	// See memory/feedback_email_stack_google_only.md.
+	console.log(`signup-hook: email suppressed (action=${actionType}) for ${email}; magicLink=${magicLink}`);
 
 	return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
-}
-
-async function sendWelcomeEmail(env: Env, to: string, plan: string | null = null, name: string | null = null, dashboardLink = 'https://dash.ailedger.dev/logs'): Promise<void> {
-	if (!env.RESEND_API_KEY) { console.error('sendWelcomeEmail: no RESEND_API_KEY'); return; }
-	const firstName = name ? name.split(' ')[0] : null;
-	const resendRes = await fetch('https://api.resend.com/emails', {
-		method: 'POST',
-		headers: {
-			Authorization: `Bearer ${env.RESEND_API_KEY}`,
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({
-			from: 'AILedger <team@ailedger.dev>',
-			to,
-			subject: `Thanks for choosing us to support you.`,
-			html: `
-				<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:40px 24px;color:#1e293b">
-					<h1 style="font-size:24px;font-weight:700;margin-bottom:8px;color:#4f46e5">Welcome to AILedger</h1>
-					<p style="font-size:15px;color:#475569;line-height:1.7;margin-bottom:32px">
-						Your account is ready. Start logging AI inferences in under 60 seconds — grab an API key from your dashboard and point your OpenAI client at our proxy.
-					</p>
-					<a href="${dashboardLink}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;font-weight:600;font-size:14px;border-radius:8px;text-decoration:none">
-						Go to dashboard →
-					</a>
-						<p style="font-size:14px;color:#475569;line-height:1.7;margin-top:32px">
-							We're excited to have you on board. If you have any questions or feedback, reply to this email - we read everything.
-						</p>
-						<p style="font-size:14px;color:#334155;font-weight:500;margin-top:8px">
-							- The AILedger Team
-						</p>
-					<p style="font-size:13px;color:#94a3b8;margin-top:40px;border-top:1px solid #e2e8f0;padding-top:16px">AILedger · ailedger.dev</p>
-				</div>
-			`,
-		}),
-	});
-	if (!resendRes.ok) {
-		const body = await resendRes.text();
-		console.error(`Resend error: ${resendRes.status} ${body}`);
-	} else {
-		console.log(`Welcome email sent to ${to}`);
-	}
-}
-
-async function sendPasswordResetEmail(env: Env, to: string, resetLink: string): Promise<void> {
-	if (!env.RESEND_API_KEY) { console.error('sendPasswordResetEmail: no RESEND_API_KEY'); return; }
-	const resendRes = await fetch('https://api.resend.com/emails', {
-		method: 'POST',
-		headers: {
-			Authorization: `Bearer ${env.RESEND_API_KEY}`,
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({
-			from: 'AILedger <team@ailedger.dev>',
-			to,
-			subject: 'Reset your AILedger password',
-			html: `
-				<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:40px 24px;color:#1e293b">
-					<h1 style="font-size:24px;font-weight:700;margin-bottom:8px;color:#4f46e5">Reset your password</h1>
-					<p style="font-size:15px;color:#475569;line-height:1.7;margin-bottom:32px">
-						Click the button below to set a new password for your AILedger account. This link expires in 1 hour.
-					</p>
-					<a href="${resetLink}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;font-weight:600;font-size:14px;border-radius:8px;text-decoration:none">
-						Reset password →
-					</a>
-					<p style="font-size:13px;color:#94a3b8;margin-top:32px">If you didn't request this, you can safely ignore this email.</p>
-					<p style="font-size:13px;color:#94a3b8;margin-top:16px;border-top:1px solid #e2e8f0;padding-top:16px">AILedger · ailedger.dev</p>
-				</div>
-			`,
-		}),
-	});
-	if (!resendRes.ok) {
-		const body = await resendRes.text();
-		console.error(`Resend error (reset): ${resendRes.status} ${body}`);
-	} else {
-		console.log(`Password reset email sent to ${to}`);
-	}
 }
 
 async function checkUsageLimit(env: Env, customerId: string): Promise<boolean> {
@@ -760,175 +683,10 @@ async function checkUsageLimit(env: Env, customerId: string): Promise<boolean> {
 	return total >= 10_000;
 }
 
-// ─── Drip email sequences ─────────────────────────────────────────────────────
-
-async function runDripEmails(env: Env): Promise<void> {
-	const now = new Date();
-	const nowMs = now.getTime();
-
-	// Fetch the user list ONCE per run, paginated. Supabase's
-	// /auth/v1/admin/users endpoint does NOT honor `created_after` /
-	// `created_before` URL params (they are silently ignored by GoTrue),
-	// so we must filter client-side. Not filtering server-side was the
-	// 2026-04-20 double-drip bug: every free user matched both day-3 and
-	// day-7 windows every 24h regardless of actual signup date.
-	const allUsers: { id: string; email: string; created_at: string;
-		user_metadata?: Record<string, string> }[] = [];
-	const perPage = 500;
-	for (let page = 1; page <= 20; page++) { // cap at 10,000 users
-		const pageRes = await fetch(
-			`${env.SUPABASE_URL}/auth/v1/admin/users?page=${page}&per_page=${perPage}`,
-			{
-				headers: {
-					apikey: env.SUPABASE_SERVICE_KEY,
-					Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
-				},
-			}
-		);
-		if (!pageRes.ok) {
-			console.error(`Drip: failed to fetch users page ${page}`, await pageRes.text());
-			break;
-		}
-		const { users } = await pageRes.json() as {
-			users: { id: string; email: string; created_at: string;
-				user_metadata?: Record<string, string> }[];
-		};
-		if (!users || users.length === 0) break;
-		allUsers.push(...users);
-		if (users.length < perPage) break;
-	}
-
-	// Find free users who signed up 3 or 7 days ago (±12h window) and
-	// have zero inference logs — they haven't integrated yet.
-	for (const day of [3, 7]) {
-		const windowStartMs = nowMs - (day * 24 + 12) * 60 * 60 * 1000;
-		const windowEndMs   = nowMs - (day * 24 - 12) * 60 * 60 * 1000;
-
-		// Client-side filter: only users whose created_at falls in the window.
-		const users = allUsers.filter((u) => {
-			const createdMs = new Date(u.created_at).getTime();
-			return Number.isFinite(createdMs)
-				&& createdMs >= windowStartMs
-				&& createdMs <= windowEndMs;
-		});
-
-		for (const user of users ?? []) {
-			// Skip if they have an active paid subscription
-			const subRes = await fetch(
-				`${env.SUPABASE_URL}/rest/v1/subscriptions?supabase_user_id=eq.${user.id}&status=eq.active&select=id`,
-				{
-					headers: {
-						apikey: env.SUPABASE_SERVICE_KEY,
-						Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
-						'Accept-Profile': 'ledger',
-						'Range-Unit': 'items', Range: '0-0', Prefer: 'count=exact',
-					},
-				}
-			);
-			if (subRes.ok) {
-				const cr = subRes.headers.get('content-range');
-				if (cr && parseInt(cr.split('/')[1] ?? '0', 10) > 0) continue;
-			}
-
-			// Skip if they already have at least one inference log
-			const logRes = await fetch(
-				`${env.SUPABASE_URL}/rest/v1/inference_logs?customer_id=eq.${user.id}&select=id`,
-				{
-					headers: {
-						apikey: env.SUPABASE_SERVICE_KEY,
-						Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
-						'Accept-Profile': 'ledger',
-						'Range-Unit': 'items', Range: '0-0', Prefer: 'count=exact',
-					},
-				}
-			);
-			if (logRes.ok) {
-				const cr = logRes.headers.get('content-range');
-				if (cr && parseInt(cr.split('/')[1] ?? '0', 10) > 0) continue;
-			}
-
-			const name: string | null = user.user_metadata?.full_name ?? user.user_metadata?.name ?? null;
-			const firstName = name ? name.split(' ')[0] : null;
-			await sendDripEmail(env, user.email, firstName, day);
-			console.log(`Drip day ${day} sent to ${user.email}`);
-		}
-	}
-}
-
-async function sendDripEmail(env: Env, to: string, firstName: string | null, day: 3 | 7): Promise<void> {
-	if (!env.RESEND_API_KEY) return;
-
-	const dashboardLink = 'https://dash.ailedger.dev/keys';
-
-	const subjects: Record<number, string> = {
-		3: 'Still getting set up? Here\'s how to finish in 60 seconds.',
-		7: 'Your EU AI Act logs are missing — here\'s a quick fix.',
-	};
-
-	const bodies: Record<number, string> = {
-		3: `
-			<p style="font-size:15px;color:#1e293b;line-height:1.8;margin-bottom:24px">
-				${firstName ? `Hi ${firstName},` : 'Hi,'}
-			</p>
-			<p style="font-size:15px;color:#334155;line-height:1.8;margin-bottom:24px">
-				You signed up for AILedger a few days ago but haven't logged your first inference yet. Integration takes under 60 seconds - here's all you need:
-			</p>
-			<ol style="font-size:15px;color:#334155;line-height:2.2;padding-left:20px;margin-bottom:28px">
-				<li>Create an API key in your dashboard</li>
-				<li>Set <code style="background:#f1f5f9;padding:3px 8px;border-radius:4px;font-size:13px;color:#1e293b">base_url=https://proxy.ailedger.dev/proxy/openai</code></li>
-				<li>Add <code style="background:#f1f5f9;padding:3px 8px;border-radius:4px;font-size:13px;color:#1e293b">x-ailedger-key: your-key</code> to your headers</li>
-			</ol>
-			<p style="font-size:15px;color:#334155;line-height:1.8;margin-bottom:32px">
-				That's it. Your code doesn't change. Every inference is automatically logged as a tamper-evident, GDPR-compatible record.
-			</p>
-		`,
-		7: `
-			<p style="font-size:15px;color:#1e293b;line-height:1.8;margin-bottom:24px">
-				${firstName ? `Hi ${firstName},` : 'Hi,'}
-			</p>
-			<p style="font-size:15px;color:#334155;line-height:1.8;margin-bottom:24px">
-				The EU AI Act enforcement deadline is August 2, 2026. If you're shipping AI in the EU and not logging inferences, you're exposed.
-			</p>
-			<p style="font-size:15px;color:#334155;line-height:1.8;margin-bottom:24px">
-				AILedger logs every inference as an immutable, SHA-256 hashed record - exactly what Article 12 requires. Drop-in integration in under 60 seconds.
-			</p>
-			<p style="font-size:15px;color:#334155;line-height:1.8;margin-bottom:32px">
-				You already have an account. All you need to do is create an API key and point your client at our proxy.
-			</p>
-		`,
-	};
-
-	const html = `
-		<div style="font-family:system-ui,-apple-system,sans-serif;max-width:560px;margin:0 auto;padding:48px 32px;color:#1e293b;background:#ffffff">
-			<h1 style="font-size:22px;font-weight:700;margin-bottom:28px;color:#4f46e5">AILedger</h1>
-			${bodies[day]}
-			<a href="${dashboardLink}" style="display:inline-block;padding:14px 28px;background:#4f46e5;color:#ffffff;font-weight:600;font-size:14px;border-radius:8px;text-decoration:none">
-				Go to dashboard →
-			</a>
-			<p style="font-size:12px;color:#94a3b8;margin-top:48px;border-top:1px solid #e2e8f0;padding-top:16px;line-height:1.6">
-				AILedger · ailedger.dev<br/>
-				You're receiving this because you signed up for AILedger. <a href="https://dash.ailedger.dev" style="color:#94a3b8">Unsubscribe</a>
-			</p>
-		</div>
-	`;
-
-	const res = await fetch('https://api.resend.com/emails', {
-		method: 'POST',
-		headers: {
-			Authorization: `Bearer ${env.RESEND_API_KEY}`,
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({
-			from: 'AILedger <team@ailedger.dev>',
-			to,
-			subject: subjects[day],
-			html,
-		}),
-	});
-	if (!res.ok) {
-		console.error(`Drip email error: ${res.status}`, await res.text());
-	}
-}
+// Drip email sequences removed 2026-04-30 per Jake universal directive (Google-only stack).
+// Will be reintroduced via Gmail API once Google Workspace is provisioned for ailedger.dev.
+// Prior implementation: runDripEmails (paginated user fetch + day-3/day-7 windowing + Resend send).
+// See memory/feedback_email_stack_google_only.md and feedback_jake_ailedger_send_as_broken.md.
 
 async function logInference({
 	env,

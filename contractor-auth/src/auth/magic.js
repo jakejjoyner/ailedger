@@ -4,7 +4,9 @@
 //   - client POSTs {email} to /magic-link/request.
 //   - worker upserts user (email_verified stays 0 until redemption).
 //   - generates 32-byte random token; stores SHA-256(token) in magic_links.
-//   - emails the raw token as part of a single-use URL via Resend.
+//   - emails the raw token as part of a single-use URL via Gmail API (pending
+//     Google Workspace provisioning; currently fails closed — see Jake universal
+//     directive 2026-04-30 / memory/feedback_email_stack_google_only.md).
 //   - response is ALWAYS 200 with the same body shape regardless of whether the
 //     email exists. This prevents account-enumeration.
 //
@@ -55,28 +57,10 @@ export async function verifyMagicLink({ env, token }) {
 }
 
 async function sendEmail({ env, to, subject, text, html }) {
-  if (!env.RESEND_API_KEY) {
-    console.error("magic.email.no_resend_key", { to });
-    // Fail closed: no API key means the link cannot be delivered.
-    throw new Error("email_not_configured");
-  }
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${env.RESEND_API_KEY}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      from: env.MAGIC_LINK_FROM,
-      to,
-      subject,
-      text,
-      html,
-    }),
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    console.error("magic.email.send_failed", res.status, body.slice(0, 200));
-    throw new Error("email_send_failed");
-  }
+  // Resend integration removed 2026-04-30 per Jake universal directive (Google-only stack).
+  // Pending: Gmail API replacement once Google Workspace is provisioned for ailedger.dev.
+  // See memory/feedback_email_stack_google_only.md.
+  // Fail-closed contract preserved — auth flow refuses until replacement is wired.
+  console.error("magic.email.gmail_api_not_yet_wired", { to, subject });
+  throw new Error("email_not_configured");
 }
