@@ -535,7 +535,9 @@ export async function sha256jcs(data: ArrayBuffer | null, contentType: string | 
 }
 
 // api_keys.customer_id IS auth.users.id by schema invariant; renamed local var for clarity.
-async function resolveApiKey(
+// Exported so tests (see proxy/test/key-rotation.spec.ts) can exercise the
+// cache-vs-DB path directly. Wiring is unchanged.
+export async function resolveApiKey(
 	env: Env,
 	apiKey: string,
 	ctx: ExecutionContext,
