@@ -59,7 +59,7 @@ afterEach(() => {
 
 describe("T9: KV cache invalidation on api_keys revocation", () => {
 	it.fails("returns null after revocation even when KV holds the pre-revocation mapping", async () => {
-		const apiKey = "agl_sk_t9_revocation_probe";
+		const apiKey = "test_sk_t9_revocation_probe";
 		const keyHash = await sha256hex(apiKey);
 		const cacheKey = `key:${keyHash}`;
 
@@ -110,7 +110,7 @@ describe("T9: KV cache invalidation on api_keys revocation", () => {
 		// must take effect immediately. A 5-minute grace window during
 		// which a stolen-and-revoked key still works is not acceptable for
 		// EU AI Act audit-grade guarantees (threat model §6.3).
-		const apiKey = "agl_sk_t9_no_grace_window";
+		const apiKey = "test_sk_t9_no_grace_window";
 		const keyHash = await sha256hex(apiKey);
 		const cacheKey = `key:${keyHash}`;
 

@@ -51,7 +51,7 @@ describe("AILedger proxy worker", () => {
 				"http://example.com/proxy/bogus/anything",
 				{
 					method: "POST",
-					headers: { "x-ailedger-key": "agl_sk_fake" },
+					headers: { "x-ailedger-key": "test_sk_fake" },
 				}
 			);
 			expect(response.status).toBe(400);

@@ -37,7 +37,7 @@ import worker from '../src';
 // dispatches a Supabase fetch — the only fetches we then care about are the
 // upstream provider call and the (fire-and-forget) inference_logs insert.
 
-const FAKE_KEY = 'agl_sk_t11_t13_forwarding';
+const FAKE_KEY = 'test_sk_t11_t13_forwarding';
 const FAKE_USER = '00000000-0000-4000-8000-0000000fa11d';
 
 async function sha256hex(input: string): Promise<string> {
