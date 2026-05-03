@@ -494,7 +494,9 @@ function hexToBytes(hex: string): Uint8Array | null {
 	return out;
 }
 
-function filterHeaders(headers: Headers, drop: string[]): Headers {
+// Exported so tests (see proxy/test/perf-regression.spec.ts) can measure
+// filterHeaders perf directly. Wiring is unchanged.
+export function filterHeaders(headers: Headers, drop: string[]): Headers {
 	const out = new Headers();
 	headers.forEach((value, key) => {
 		const k = key.toLowerCase();
