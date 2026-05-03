@@ -66,7 +66,7 @@ async function medianMs(runs: number, fn: () => Promise<unknown> | unknown): Pro
 
 describe("T14.1: single inference hot-path CPU < 50ms (stubbed upstream)", () => {
 	it("apiKey hash + filterHeaders + request/response JCS hashes complete under 50ms", async () => {
-		const apiKey = "agl_sk_" + "a".repeat(32);
+		const apiKey = "test_sk_" + "a".repeat(32);
 		const reqBody = JSON.stringify({
 			model: "gpt-4o-mini",
 			messages: [
