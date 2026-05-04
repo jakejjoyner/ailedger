@@ -145,6 +145,10 @@ def _post_batch(url: str, key: str, batch: list[dict]) -> tuple[bool, int | None
         headers={
             "Content-Type": "application/json",
             "x-ailedger-key": key,
+            # Cloudflare bot protection on proxy.ailedger.dev returns 1010
+            # for the default `Python-urllib/X.Y` UA. Identify ourselves so
+            # CF lets the batch through.
+            "User-Agent": "dogfeed-sidecar/0.1 (+https://ailedger.dev)",
         },
     )
     try:
