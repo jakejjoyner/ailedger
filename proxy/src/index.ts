@@ -851,6 +851,11 @@ interface LogEntry {
 	started_at: string;
 	completed_at: string;
 	logged_at: string;
+	// Optional caller-supplied stable event id for at-most-once semantics.
+	// Populated by sidecar callers (e.g., session-jsonl tail-and-ship); null
+	// for the in-line /proxy/<provider> path. Combined with customer_id, a
+	// unique partial index in the DB silently no-ops duplicate inserts.
+	source_uuid?: string | null;
 }
 
 async function buildLogEntry({
@@ -965,7 +970,11 @@ async function tryDrainOne(env: Env, bufferKey: string, entry: LogEntry): Promis
 					Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
 					'Content-Type': 'application/json',
 					'Content-Profile': 'ledger',
-					Prefer: 'return=minimal',
+					// resolution=ignore-duplicates: when source_uuid causes a
+					// unique-index conflict (sidecar replay), silently no-op
+					// instead of failing. Rows without source_uuid never hit
+					// the partial index, so the in-line proxy path is unchanged.
+					Prefer: 'resolution=ignore-duplicates,return=minimal',
 				},
 				body: JSON.stringify(entry),
 			});
@@ -1199,6 +1208,9 @@ async function handleSidecarLog(
 		latency_ms?: number;
 		started_at?: string;
 		completed_at?: string;
+		// Caller-supplied stable event id; combined with customer_id, dupes
+		// silently no-op via the unique partial index.
+		source_uuid?: string;
 	};
 	try {
 		payload = await request.json();
@@ -1224,33 +1236,48 @@ async function handleSidecarLog(
 	const startedAt = payload.started_at ?? now;
 	const completedAt = payload.completed_at ?? now;
 
-	const entry = await buildLogEntry({
-		provider,
-		method,
-		path,
-		requestBody: requestBuf,
-		requestContentType,
-		responseBody: responseBuf,
-		responseContentType,
-		statusCode,
-		latencyMs,
-		startedAt,
-		completedAt,
-		supabaseUserId,
-		systemId,
-	});
+	try {
+		const entry = await buildLogEntry({
+			provider,
+			method,
+			path,
+			requestBody: requestBuf,
+			requestContentType,
+			responseBody: responseBuf,
+			responseContentType,
+			statusCode,
+			latencyMs,
+			startedAt,
+			completedAt,
+			supabaseUserId,
+			systemId,
+		});
 
-	// If the caller passed an explicit model name, override the auto-extracted
-	// one (sidecar callers may know the model better than what's parseable
-	// from the canonicalized request body).
-	if (payload.model) {
-		entry.model_name = payload.model;
+		if (payload.source_uuid) {
+			entry.source_uuid = payload.source_uuid;
+		}
+
+		// If the caller passed an explicit model name, override the auto-extracted
+		// one (sidecar callers may know the model better than what's parseable
+		// from the canonicalized request body).
+		if (payload.model) {
+			entry.model_name = payload.model;
+		}
+
+		const bufferKey = await persistDurable(env, entry);
+		ctx.waitUntil(tryDrainOne(env, bufferKey, entry));
+
+		return new Response(null, { status: 204 });
+	} catch (e) {
+		// Surface the underlying error to the caller so sidecar diagnostics are
+		// easy. The /log endpoint is internal-only (auth-gated), so leaking the
+		// error message is acceptable here.
+		console.error(JSON.stringify({ event: 'handleSidecarLog:error', error: String(e), stack: (e as Error)?.stack }));
+		return new Response(JSON.stringify({ error: 'sidecar log failed', detail: String(e) }), {
+			status: 500,
+			headers: { 'Content-Type': 'application/json' },
+		});
 	}
-
-	const bufferKey = await persistDurable(env, entry);
-	ctx.waitUntil(tryDrainOne(env, bufferKey, entry));
-
-	return new Response(null, { status: 204 });
 }
 
 async function handleDogfeedEvents(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
