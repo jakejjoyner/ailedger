@@ -36,9 +36,10 @@ function formatRelative(iso: string | null) {
   return d.toLocaleDateString()
 }
 
-export default function ChainIntegrityPanel({ customerId, lastInsertAt }: {
+export default function ChainIntegrityPanel({ customerId, lastInsertAt, onHeadUpdate }: {
   customerId: string
   lastInsertAt: string | null
+  onHeadUpdate?: (head: ChainHead) => void
 }) {
   const [head, setHead] = useState<ChainHead | null>(null)
   const [status, setStatus] = useState<Status>('idle')
@@ -63,7 +64,11 @@ export default function ChainIntegrityPanel({ customerId, lastInsertAt }: {
     return () => clearInterval(interval)
   }, [verifiedAt])
 
-  // Initial load.
+  // Initial load + auto-verify if any rows are chained. The auto-verify is
+  // intentional UX — users land on the page and immediately know "I'm
+  // verified" without a click. Performance note: verify_chain is O(n) over
+  // chained rows; for very large customers we throttle on visibility-change
+  // and rely on the 60s lockout to prevent re-spam on tab focus.
   useEffect(() => {
     let cancelled = false
     async function loadHead() {
@@ -74,11 +79,40 @@ export default function ChainIntegrityPanel({ customerId, lastInsertAt }: {
         setStatus('error')
         return
       }
-      setHead(data as ChainHead)
+      const headData = data as ChainHead
+      setHead(headData)
+      if (onHeadUpdate) onHeadUpdate(headData)
+
+      // Auto-verify on initial load if there's anything to verify.
+      if (headData.row_count > 0) {
+        const { data: verifyData, error: verifyError } = await supabase.rpc(
+          'verify_chain',
+          { p_customer_id: customerId },
+        )
+        if (cancelled) return
+        if (verifyError) {
+          setErrorMsg(verifyError.message)
+          setStatus('error')
+          return
+        }
+        const result = verifyData as VerifyChain
+        setVerifyResult(result)
+        setVerifiedAt(new Date().toISOString())
+        setStatus(result.ok ? 'verified-ok' : 'verified-broken')
+        if (result.chain_head_hash) {
+          const updated: ChainHead = {
+            chain_head_hash: result.chain_head_hash,
+            last_id: headData.last_id,
+            row_count: result.row_count,
+          }
+          setHead(updated)
+          if (onHeadUpdate) onHeadUpdate(updated)
+        }
+      }
     }
     loadHead()
     return () => { cancelled = true }
-  }, [customerId])
+  }, [customerId, onHeadUpdate])
 
   // When a new row is inserted (parent debounces), refresh the head and mark
   // existing verification stale.
@@ -89,12 +123,14 @@ export default function ChainIntegrityPanel({ customerId, lastInsertAt }: {
       const { data, error } = await supabase.rpc('chain_head', { p_customer_id: customerId })
       if (cancelled) return
       if (error) return
-      setHead(data as ChainHead)
+      const headData = data as ChainHead
+      setHead(headData)
+      if (onHeadUpdate) onHeadUpdate(headData)
       setStatus((prev) => (prev === 'verified-ok' || prev === 'verified-broken' ? 'stale' : prev))
     }
     loadHead()
     return () => { cancelled = true }
-  }, [lastInsertAt, customerId])
+  }, [lastInsertAt, customerId, onHeadUpdate])
 
   const canVerify = status !== 'verifying' && throttleExpired
 
@@ -113,11 +149,13 @@ export default function ChainIntegrityPanel({ customerId, lastInsertAt }: {
     setVerifiedAt(new Date().toISOString())
     setStatus(result.ok ? 'verified-ok' : 'verified-broken')
     if (result.chain_head_hash) {
-      setHead((h) => ({
+      const updated: ChainHead = {
         chain_head_hash: result.chain_head_hash,
-        last_id: h?.last_id ?? null,
+        last_id: head?.last_id ?? null,
         row_count: result.row_count,
-      }))
+      }
+      setHead(updated)
+      if (onHeadUpdate) onHeadUpdate(updated)
     }
   }
 

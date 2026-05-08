@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabase'
 import UpgradeModal from './UpgradeModal'
 import ChainIntegrityPanel from './ChainIntegrityPanel'
+import LogDetailDrawer from './LogDetailDrawer'
 
 const PLAN_LIMITS: Record<string, number | null> = {
   free: 10_000,
@@ -57,6 +58,22 @@ function formatDate(iso: string) {
   })
 }
 
+// Position within the chain. Visible logs are the most-recent N rows ordered
+// by logged_at DESC; the chain orders by id ASC. We approximate by assuming
+// the newest visible chained row is at position chainRowCount, the next is
+// chainRowCount-1, etc. Legacy rows (chain_prev_hash null) are skipped.
+function computeChainPosition(log: LogEntry, allLogs: LogEntry[], chainRowCount: number): number | null {
+  if (log.chain_prev_hash === null) return null
+  if (chainRowCount === 0) return null
+  let position = chainRowCount
+  for (const candidate of allLogs) {
+    if (candidate.chain_prev_hash === null) continue
+    if (candidate.id === log.id) return position
+    position -= 1
+  }
+  return null
+}
+
 export default function LogTable({ customerId, onUpgrade }: { customerId: string; onUpgrade: () => void }) {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [systems, setSystems] = useState<AiSystem[]>([])
@@ -66,6 +83,8 @@ export default function LogTable({ customerId, onUpgrade }: { customerId: string
   const [planTier, setPlanTier] = useState<'free' | 'pro' | 'scale'>('free')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [lastInsertAt, setLastInsertAt] = useState<string | null>(null)
+  const [chainRowCount, setChainRowCount] = useState<number>(0)
+  const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null)
   const PAGE = 50
 
   useEffect(() => {
@@ -146,7 +165,18 @@ export default function LogTable({ customerId, onUpgrade }: { customerId: string
       )}
 
       {/* Chain integrity — surfaces the load-bearing audit-chain structure */}
-      <ChainIntegrityPanel customerId={customerId} lastInsertAt={lastInsertAt} />
+      <ChainIntegrityPanel
+        customerId={customerId}
+        lastInsertAt={lastInsertAt}
+        onHeadUpdate={(h) => setChainRowCount(h.row_count)}
+      />
+
+      <LogDetailDrawer
+        log={selectedLog}
+        systemName={selectedLog?.system_id ? (systems.find((s) => s.id === selectedLog.system_id)?.system_name ?? null) : null}
+        chainPosition={selectedLog && selectedLog.chain_prev_hash !== null ? computeChainPosition(selectedLog, logs, chainRowCount) : null}
+        onClose={() => setSelectedLog(null)}
+      />
 
       {/* Usage bar */}
       <div className="mb-6">
@@ -199,6 +229,7 @@ export default function LogTable({ customerId, onUpgrade }: { customerId: string
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-800 bg-[#1a1d27]">
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">#</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Time</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">System</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Provider</th>
@@ -212,31 +243,42 @@ export default function LogTable({ customerId, onUpgrade }: { customerId: string
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-slate-500">
+                  <td colSpan={9} className="px-4 py-12 text-center text-slate-500">
                     Loading...
                   </td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-slate-500">
+                  <td colSpan={9} className="px-4 py-12 text-center text-slate-500">
                     No logs yet. Point your AI calls through the proxy to start recording.
                   </td>
                 </tr>
               ) : (
-                logs.map((log) => (
-                  <tr key={log.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
-                    <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{formatDate(log.logged_at)}</td>
-                    <td className="px-4 py-3 text-slate-300 text-sm">
-                      {log.system_id ? (systems.find((s) => s.id === log.system_id)?.system_name ?? '-') : '-'}
-                    </td>
-                    <td className="px-4 py-3 text-white capitalize">{log.provider}</td>
-                    <td className="px-4 py-3 text-slate-300">{log.model_name ?? '-'}</td>
-                    <td className={`px-4 py-3 font-mono font-medium ${statusColor(log.status_code)}`}>{log.status_code}</td>
-                    <td className="px-4 py-3 text-slate-400">{log.latency_ms}ms</td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{shortHash(log.input_hash)}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{shortHash(log.output_hash)}</td>
-                  </tr>
-                ))
+                logs.map((log) => {
+                  const position = computeChainPosition(log, logs, chainRowCount)
+                  return (
+                    <tr
+                      key={log.id}
+                      onClick={() => setSelectedLog(log)}
+                      style={{ cursor: 'pointer' }}
+                      className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors"
+                    >
+                      <td className="px-4 py-3 font-mono text-xs text-slate-500 whitespace-nowrap">
+                        {position !== null ? `#${position}` : '–'}
+                      </td>
+                      <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{formatDate(log.logged_at)}</td>
+                      <td className="px-4 py-3 text-slate-300 text-sm">
+                        {log.system_id ? (systems.find((s) => s.id === log.system_id)?.system_name ?? '-') : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-white capitalize">{log.provider}</td>
+                      <td className="px-4 py-3 text-slate-300">{log.model_name ?? '-'}</td>
+                      <td className={`px-4 py-3 font-mono font-medium ${statusColor(log.status_code)}`}>{log.status_code}</td>
+                      <td className="px-4 py-3 text-slate-400">{log.latency_ms}ms</td>
+                      <td className="px-4 py-3 font-mono text-xs text-slate-500">{shortHash(log.input_hash)}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-slate-500">{shortHash(log.output_hash)}</td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>
