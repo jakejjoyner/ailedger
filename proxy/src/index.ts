@@ -1195,6 +1195,24 @@ async function handleSidecarLog(
 	}
 	const { supabaseUserId, systemId } = resolved;
 
+	// ─── Usage limit check (uniform with /proxy/<provider> path) ────────────
+	// Without this, sidecar callers (e.g., the Vernier session-jsonl daemon)
+	// silently exceed the tenant's monthly cap because /log used to skip the
+	// check. The dashboard already surfaces "limit reached"; the backend
+	// should agree.
+	const limitHit = await checkUsageLimit(env, supabaseUserId);
+	if (limitHit) {
+		return new Response(
+			JSON.stringify({
+				error: 'Monthly inference limit reached. Upgrade at https://dash.ailedger.dev/billing',
+			}),
+			{
+				status: 429,
+				headers: { 'Content-Type': 'application/json' },
+			},
+		);
+	}
+
 	let payload: {
 		provider?: string;
 		model?: string;
