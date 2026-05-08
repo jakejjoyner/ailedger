@@ -28,9 +28,10 @@ begin;
 -- script reads back the resulting UUID.
 do $migration$
 declare
-  v_user_id  uuid;
-  v_raw_key  text;
-  v_key_hash text;
+  v_user_id    uuid;
+  v_raw_key    text;
+  v_key_hash   text;
+  v_key_prefix text;
   v_existing_key_count int;
 begin
   -- Look up the vernier-internal user (must be pre-created via Supabase
@@ -63,14 +64,17 @@ begin
   -- ─── 3. Generate a fresh API key ─────────────────────────────────────────
   -- Format: agl_sk_<48 random hex chars> = 64 hex chars total = 32 bytes of
   -- entropy. Matches the customer-facing key format.
-  v_raw_key := 'agl_sk_' || encode(extensions.gen_random_bytes(24), 'hex');
-  v_key_hash := encode(extensions.digest(v_raw_key, 'sha256'), 'hex');
+  v_raw_key    := 'agl_sk_' || encode(extensions.gen_random_bytes(24), 'hex');
+  v_key_hash   := encode(extensions.digest(v_raw_key, 'sha256'), 'hex');
+  v_key_prefix := substring(v_raw_key from 1 for 14);  -- "agl_sk_" + first 6 hex
 
   -- ─── 4. Insert into api_keys ──────────────────────────────────────────────
   -- system_id null = the key isn't scoped to a specific AI system; all
   -- Vernier traffic shows up under the same vernier-internal tenant.
-  insert into ledger.api_keys (customer_id, key_hash, system_id, name)
-  values (v_user_id, v_key_hash, null, 'vernier-internal-sidecar')
+  -- key_prefix is non-null per schema (used for admin UI display without
+  -- exposing the full key).
+  insert into ledger.api_keys (customer_id, key_hash, key_prefix, system_id, name)
+  values (v_user_id, v_key_hash, v_key_prefix, null, 'vernier-internal-sidecar')
   on conflict do nothing;
 
   -- ─── 5. Print the raw key for one-time copy ──────────────────────────────
