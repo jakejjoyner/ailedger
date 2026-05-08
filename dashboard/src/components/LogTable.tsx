@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase'
 import UpgradeModal from './UpgradeModal'
+import ChainIntegrityPanel from './ChainIntegrityPanel'
 
 const PLAN_LIMITS: Record<string, number | null> = {
   free: 10_000,
@@ -25,6 +26,7 @@ interface LogEntry {
   path: string
   input_hash: string | null
   output_hash: string | null
+  chain_prev_hash: string | null
   status_code: number
   latency_ms: number
   system_id: string | null
@@ -63,6 +65,7 @@ export default function LogTable({ customerId, onUpgrade }: { customerId: string
   const [monthlyCount, setMonthlyCount] = useState(0)
   const [planTier, setPlanTier] = useState<'free' | 'pro' | 'scale'>('free')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [lastInsertAt, setLastInsertAt] = useState<string | null>(null)
   const PAGE = 50
 
   useEffect(() => {
@@ -120,6 +123,7 @@ export default function LogTable({ customerId, onUpgrade }: { customerId: string
       }, (payload) => {
         setLogs((prev) => [payload.new as LogEntry, ...prev.slice(0, PAGE - 1)])
         setTotal((t) => t + 1)
+        setLastInsertAt(new Date().toISOString())
       })
       .subscribe()
 
@@ -140,6 +144,10 @@ export default function LogTable({ customerId, onUpgrade }: { customerId: string
           onUpgrade={() => { setShowUpgradeModal(false); onUpgrade() }}
         />
       )}
+
+      {/* Chain integrity — surfaces the load-bearing audit-chain structure */}
+      <ChainIntegrityPanel customerId={customerId} lastInsertAt={lastInsertAt} />
+
       {/* Usage bar */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-1.5">
