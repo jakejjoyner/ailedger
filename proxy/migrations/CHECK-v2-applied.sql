@@ -67,12 +67,7 @@ with checks as (
       select 1 from pg_proc p
       join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'ledger' and p.proname = 'decision_events_canonical_hash_v2'
-    ) as canonical_hash_v2_function_exists,
-
-    -- Row count (informational only)
-    coalesce((
-      select count(*) from ledger.decision_events
-    ), 0) as decision_events_row_count
+    ) as canonical_hash_v2_function_exists
 )
 select
   case
@@ -99,6 +94,8 @@ select
   pseudonymization_function_exists,
   extractor_method_column_exists,
   chain_spec_version_column_exists,
-  canonical_hash_v2_function_exists,
-  decision_events_row_count
+  canonical_hash_v2_function_exists
 from checks;
+
+-- Optional follow-up: if STATE 2, run separately to get row count:
+--   select count(*) from ledger.decision_events;
