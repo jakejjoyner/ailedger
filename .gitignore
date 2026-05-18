@@ -57,3 +57,4 @@ test_proxy.py
 
 # Python editable-install artifacts
 *.egg-info/
+proxy/docs/*.jpg
