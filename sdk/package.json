@@ -1,0 +1,45 @@
+{
+  "name": "@ailedger/sdk",
+  "version": "0.1.0",
+  "description": "AILedger SDK — Detection Event emission + extraction (4-rung method ladder) per param canonicalization spec v1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "ailedger",
+    "detection-event",
+    "ai-audit",
+    "compliance",
+    "hash-chain",
+    "eu-ai-act",
+    "federal-rule-707"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "canonicalize": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
