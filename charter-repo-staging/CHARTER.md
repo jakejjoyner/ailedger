@@ -26,7 +26,7 @@ Customers use AILedger Detection Events, Integrity Chain verifications, and Witn
 - Removal of required-action workflows for detected events
 - Selective logging that excludes specific decision categories at customer request
 
-*Specific standards anchoring detection defaults are listed in [STANDARDS.md](./STANDARDS.md). The principle of standards-anchoring is the Charter commitment; the specific list is maintained in that document and updates without requiring board amendment.
+*Specific standards anchoring detection defaults are listed in [STANDARDS.md](./STANDARDS.md). The principle of standards-anchoring is the Charter commitment; the specific list is maintained in that document and updates without requiring board approval.
 
 ## Decisions requiring board review
 
