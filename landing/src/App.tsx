@@ -201,7 +201,7 @@ function Hero() {
       <div style={{ maxWidth: 'min(92vw, 1280px)', margin: '0 auto', position: 'relative', zIndex: 1 }}>
         <div className={`hero-eyebrow fade-in fade-1 ${anim}`}>
           <span className="hero-eyebrow-dot" aria-hidden="true" />
-          August 2, 2026 — EU AI Act enforcement
+          August 2, 2026 · EU AI Act enforcement
         </div>
         <h1 className="hero-title" style={{
           fontSize: 'clamp(44px, 6.5vw, 76px)', fontWeight: 700, color: 'var(--fg-primary)',
@@ -210,11 +210,14 @@ function Hero() {
           <span className={`hero-title-line fade-in fade-2a ${anim}`} style={{ display: 'block' }}>Audit-grade evidence for</span>
           <span className={`hero-title-accent fade-in fade-2b ${anim}`} style={{ display: 'block' }}><span style={{ display: 'inline-block', position: 'relative', top: '-0.055em', fontSize: '1.05em', paddingBottom: '0.12em', background: 'linear-gradient(135deg, var(--gradient-1) 0%, var(--gradient-2) 50%, var(--gradient-3) 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>every</span> AI call your product makes.</span>
         </h1>
+        <p className={`hero-subtitle hero-mission fade-in fade-3 ${anim}`} style={{ fontSize: 'clamp(16px, 2.6vw, 20px)', color: 'var(--fg-secondary)', lineHeight: 1.55, maxWidth: 720, margin: '0 auto 24px', fontWeight: 500 }}>
+          AILedger makes AI decisions in high-risk industries substantively auditable. We catch bias, drift, and disparate impact in production. Harm gets prevented before any compounding effects, not after a regulator or lawsuit forces the conversation.
+        </p>
         <p className={`hero-subtitle fade-in fade-3 ${anim}`} style={{ fontSize: 'clamp(15px, 2.5vw, 19px)', color: 'var(--fg-muted)', lineHeight: 1.65, maxWidth: 620, margin: '0 auto 20px' }}>
           AILedger is a proxy that sits between your application and your AI provider. Every inference routes through it and becomes a hash-chained entry in an append-only log your compliance team can export for the Article&nbsp;12 audit trail.
         </p>
         <p className={`hero-subtitle fade-in fade-3 ${anim}`} style={{ fontSize: 'clamp(15px, 2.5vw, 19px)', color: 'var(--fg-muted)', lineHeight: 1.65, maxWidth: 620, margin: '0 auto 44px' }}>
-          No prompts are stored. No outputs are stored. Only SHA-256 fingerprints + metadata — the evidence a regulator or auditor can verify, without AILedger holding your customers' data.
+          No prompts are stored. No outputs are stored. Only SHA-256 fingerprints + metadata. The evidence a regulator or auditor can verify, without AILedger holding your customers' data.
         </p>
         <div className={`hero-cta-group fade-in fade-4 ${anim}`} style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
           <a className="hero-cta-primary" href={DASHBOARD_URL} style={{
