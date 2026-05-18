@@ -56,6 +56,15 @@ export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		const url = new URL(request.url);
 
+		// Root: plain "ok" so curl probes and uptime monitors get a clean signal
+		// instead of the static-asset Hello World placeholder. Status-page friendly.
+		if (url.pathname === '/') {
+			return new Response('ok', {
+				status: 200,
+				headers: { 'Content-Type': 'text/plain' },
+			});
+		}
+
 		// Health check
 		if (url.pathname === '/health') {
 			return new Response(JSON.stringify({ status: 'ok' }), {

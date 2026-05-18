@@ -4,7 +4,7 @@
 
 AILedger is the audit substrate for AI-influenced decisions in regulated and adversarial contexts. Three layers (Integrity Chain, Decision Event, Detection) ready for Federal Rule of Evidence 707 admissibility (United States) and EU AI Act Articles 12, 19, 26 (European Union). Standards-anchored to ISO/IEC 42001 and NIST AI RMF 1.0. Charter v1.1 published with refused-customer + refused-feature commitments. Open-source Detection layer at [github.com/jakejjoyner/ailedger-detection](https://github.com/jakejjoyner/ailedger-detection).
 
-**License:** MIT (this repo) · **Detection layer:** Apache 2.0 (separate repo)
+**License:** MIT (this repo) · **Detection layer:** Apache 2.0 at [github.com/jakejjoyner/ailedger-detection](https://github.com/jakejjoyner/ailedger-detection)
 
 **Live:** [ailedger.dev](https://ailedger.dev) · **Charter:** [ailedger.dev/charter](https://ailedger.dev/charter) · **Dashboard:** [dash.ailedger.dev](https://dash.ailedger.dev) · **Proxy:** [proxy.ailedger.dev](https://proxy.ailedger.dev)
 
@@ -130,7 +130,7 @@ Audit-time extractor (separate process)
   │              │
   │              └──> INSERT inferred row (chain-extended; anchor preserved)
   │
-  └──> Detection layer (Apache 2.0, separate repo)
+  └──> Detection layer (Apache 2.0, [github.com/jakejjoyner/ailedger-detection](https://github.com/jakejjoyner/ailedger-detection))
         │
         └──> SELECT FROM ledger.decision_events;
              apply: disparate-impact ratio / parity / drift / etc.
@@ -185,7 +185,7 @@ This is a monorepo.
 | `sdk/` | `@ailedger/sdk` v0.2.0 producer SDK: Decision Event emission + 4-rung extractor ladder + Web Crypto API hashing + JCS canonicalization | TypeScript, ESM, Node 20+ |
 | `redirect/` | Dumb redirect Worker (dashboard.ailedger.dev → dash.ailedger.dev) | TypeScript, Cloudflare Workers |
 
-Detection layer (Apache 2.0) lives in a separate repo:
+Detection layer (Apache 2.0) lives in a separate repo at [github.com/jakejjoyner/ailedger-detection](https://github.com/jakejjoyner/ailedger-detection):
 
 | Repo | Purpose | Stack |
 |---|---|---|
@@ -250,7 +250,7 @@ AILedger does not certify compliance. We provide a substrate; compliance is the 
 
 ## License
 
-This repo: MIT. Detection layer (separate repo): Apache 2.0. Charter: public.
+This repo: MIT. Detection layer ([github.com/jakejjoyner/ailedger-detection](https://github.com/jakejjoyner/ailedger-detection)): Apache 2.0. Charter: public.
 
 ---
 
