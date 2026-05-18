@@ -11,10 +11,13 @@
 		"nodejs_compat",
 		"global_fetch_strictly_public"
 	],
-	"assets": {
-		// The path to the directory containing the `index.html` file to be served at `/`
-		"directory": "./public"
-	},
+	// 2026-05-18: assets binding disabled so worker fetch handler serves /
+	// directly with 'ok' 200. Public-facing uptime probes + status page
+	// expect a clean 200 signal; the prior Hello-World placeholder was
+	// intercepting before the worker ran.
+	// "assets": {
+	// 	"directory": "./public"
+	// },
 	"observability": {
 		"enabled": true
 	},
