@@ -14,6 +14,89 @@ Vernier authored four migrations during Jake's overnight move, implementing the 
 
 Recommended apply order: **schema → taxonomy_seed (decision_type) → taxonomy_seed (protected_class) → subject_pseudonymization → chain_trigger.**
 
+After the 2026-05-12 batch lands, also apply `20260518_inferred_detection_events.sql` (Vernier 2026-05-18 per param canonicalization spec v1.0).
+
+## Supabase SQL Editor warnings (when pasting these migrations)
+
+When running these migrations via Supabase's SQL Editor, you will hit warnings on any step that creates a table without an explicit `enable row level security` statement in the migration. Supabase surfaces three options:
+
+- **Cancel:** abandon the run; useful only if you want to edit the SQL first.
+- **Run without RLS:** new tables are anon-readable via PostgREST. NOT SAFE for production. Tenant identifiers and ledger row content would be exposed.
+- **Run and enable RLS:** RLS is turned on for every new table in the batch. No policies are defined, so only `service_role` can read or write. SAFE default.
+
+**Choose "Run and enable RLS" for every migration in this batch** unless you explicitly want the table public-readable (none of the v2 migrations want that).
+
+Per-migration warning expectations:
+
+| Migration | Tables created | RLS in SQL? | Click |
+|---|---|---|---|
+| `20260512_decision_events_schema.sql` | `ledger.tenants`, `ledger.ai_systems`, `ledger.decision_events` | Only on `decision_events` (line 137) | Run and enable RLS (covers `tenants` + `ai_systems`) |
+| `20260512_decision_type_taxonomy_seed.sql` | `ledger.decision_type_taxonomy` | No | Run and enable RLS |
+| `20260512_protected_class_taxonomy_seed.sql` | `ledger.protected_class_field_taxonomy` | No | Run and enable RLS |
+| `20260512_subject_pseudonymization.sql` | `ledger.tenant_salts` | Yes (line 66) | No warning expected; if it appears, Run and enable RLS |
+| `20260512_decision_events_chain_trigger.sql` | (no new tables; only functions + trigger) | n/a | No warning expected |
+| `20260518_inferred_detection_events.sql` | (no new tables; only columns + functions on existing decision_events) | n/a | No warning expected |
+
+After all six migrations have run, every v2 table has RLS ON and no permissive policies. Customer reads via the dashboard / contractor-dash will return zero rows until Jake adds the policies. The service_role-backed proxy Worker continues to write Decision Events without policies (service_role bypasses RLS).
+
+## Policies to add (separate from migrations)
+
+Once the schema is live, add policies before any customer-facing read surface ships. Suggested shapes (adapt to your auth model):
+
+```sql
+-- decision_events: tenants read their own events
+create policy decision_events_tenant_read
+  on ledger.decision_events
+  for select
+  to authenticated
+  using (
+    tenant_id in (
+      select tenant_id from ledger.tenant_memberships
+      where user_id = auth.uid()
+    )
+  );
+
+-- tenants table: members read their own tenant row
+create policy tenants_member_read
+  on ledger.tenants
+  for select
+  to authenticated
+  using (
+    id in (
+      select tenant_id from ledger.tenant_memberships
+      where user_id = auth.uid()
+    )
+  );
+
+-- ai_systems: members read systems for tenants they belong to
+create policy ai_systems_tenant_read
+  on ledger.ai_systems
+  for select
+  to authenticated
+  using (
+    tenant_id in (
+      select tenant_id from ledger.tenant_memberships
+      where user_id = auth.uid()
+    )
+  );
+
+-- decision_type_taxonomy + protected_class_field_taxonomy: world-readable
+-- by authenticated users (reference data, not tenant-scoped)
+create policy decision_type_taxonomy_read
+  on ledger.decision_type_taxonomy
+  for select
+  to authenticated
+  using (true);
+
+create policy protected_class_field_taxonomy_read
+  on ledger.protected_class_field_taxonomy
+  for select
+  to authenticated
+  using (true);
+```
+
+These policies assume a `ledger.tenant_memberships` table exists (user_id, tenant_id). If membership lives elsewhere in the auth schema, swap the subquery accordingly.
+
 ## CLAUDE.md immediate-priorities coverage
 
 Per `~/workspace/dev/ailedger/CLAUDE.md` §"Immediate priorities (this work session)":
