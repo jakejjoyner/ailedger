@@ -2,7 +2,7 @@
 
 **Audit-grade evidence for AI-influenced decisions, ready for Federal Rule 707 and the EU AI Act.**
 
-AILedger is the audit substrate for AI-influenced decisions in regulated and adversarial contexts. Three layers (Integrity Chain, Decision Event, Detection) ready for Federal Rule of Evidence 707 admissibility (United States) and EU AI Act Articles 12, 19, 26 (European Union). Standards-anchored to ISO/IEC 42001 and NIST AI RMF 1.0. Charter v1.1 published with refused-customer + refused-feature commitments. Open-source Detection layer at [github.com/jakejjoyner/ailedger-detection](https://github.com/jakejjoyner/ailedger-detection).
+AILedger is the audit substrate for AI-influenced decisions in regulated and adversarial contexts. Three layers (Integrity Chain, Decision Event, Detection) ready for Federal Rule of Evidence 707 admissibility (United States) and EU AI Act Articles 12, 19, 26 (European Union). Standards-anchored to ISO/IEC 42001 and NIST AI RMF 1.0. Charter v1.2 published with refused-customer + refused-feature commitments. Open-source Detection layer at [github.com/jakejjoyner/ailedger-detection](https://github.com/jakejjoyner/ailedger-detection).
 
 **License:** MIT (this repo) · **Detection layer:** Apache 2.0 at [github.com/jakejjoyner/ailedger-detection](https://github.com/jakejjoyner/ailedger-detection)
 
@@ -36,7 +36,7 @@ AILedger is a substrate, not a logging tool. The unit of analysis is the **Decis
 
 ## Charter
 
-AILedger ships with a public Charter (v1.1) that names refused customer categories and refused feature categories in writing. Amendments require unanimous Board of Directors approval. Charter is published at [ailedger.dev/charter](https://ailedger.dev/charter).
+AILedger ships with a public Charter (v1.2) that names refused customer categories and refused feature categories in writing. Amendments require unanimous Board of Directors approval. Charter is published at [ailedger.dev/charter](https://ailedger.dev/charter).
 
 Refusing customers and features is the product working as designed, not a missed-revenue problem.
 
