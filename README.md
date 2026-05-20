@@ -2,7 +2,7 @@
 
 **Audit-grade evidence for AI-influenced decisions, ready for Federal Rule 707 and the EU AI Act.**
 
-AILedger is the audit substrate for AI-influenced decisions in regulated and adversarial contexts. Three layers (Integrity Chain, Decision Event, Detection) ready for Federal Rule of Evidence 707 admissibility (United States) and EU AI Act Articles 12, 19, 26 (European Union). Standards-anchored to ISO/IEC 42001 and NIST AI RMF 1.0. Charter v1.1 published with refused-customer + refused-feature commitments. Open-source Detection layer at [github.com/jakejjoyner/ailedger-detection](https://github.com/jakejjoyner/ailedger-detection).
+AILedger is the audit substrate for AI-influenced decisions in regulated and adversarial contexts. Three layers (Integrity Chain, Decision Event, Detection) ready for Federal Rule of Evidence 707 admissibility (United States) and EU AI Act Articles 12, 19, 26 (European Union). Standards-anchored to ISO/IEC 42001 and NIST AI RMF 1.0. Charter v1.2 published with refused-customer + refused-feature commitments. Open-source Detection layer at [github.com/jakejjoyner/ailedger-detection](https://github.com/jakejjoyner/ailedger-detection).
 
 **License:** MIT (this repo) · **Detection layer:** Apache 2.0 at [github.com/jakejjoyner/ailedger-detection](https://github.com/jakejjoyner/ailedger-detection)
 
@@ -27,7 +27,7 @@ AILedger is a substrate, not a logging tool. The unit of analysis is the **Decis
 | Regime | Articles / Standards | Status |
 |---|---|---|
 | Federal Rule of Evidence 707 (United States) | AI-generated evidence to Rule 702 admissibility standard | Approved Judicial Conference 2025; on track to take effect |
-| EU AI Act (European Union) | Articles 12 (logging), 19 (deployer obligations), 26 (high-risk operator duties), Annex III (high-risk categories) | Enforceable from 2026-08-02 |
+| EU AI Act (European Union) | Articles 12 (logging), 19 (deployer obligations), 26 (high-risk operator duties), 27 (FRIA), 50 (transparency), Annex III (high-risk categories) | Phased from 2026-08-02 (Article 50 transparency, GPAI provider duties, financial-sector high-risk) through 2027-12-02 (Annex III standalone high-risk) and 2028-08-02 (Annex I product-embedded), per the May 2026 Digital Omnibus |
 | ISO/IEC 42001 | AI Management Systems | Standards-anchored |
 | NIST AI RMF 1.0 | AI Risk Management Framework | Standards-anchored |
 | GDPR Article 22 | Right to explanation for automated decisions | Compatible by design (subject pseudonymization + per-decision audit) |
@@ -36,7 +36,7 @@ AILedger is a substrate, not a logging tool. The unit of analysis is the **Decis
 
 ## Charter
 
-AILedger ships with a public Charter (v1.1) that names refused customer categories and refused feature categories in writing. Amendments require unanimous Board of Directors approval. Charter is published at [ailedger.dev/charter](https://ailedger.dev/charter).
+AILedger ships with a public Charter (v1.2) that names refused customer categories and refused feature categories in writing. Amendments require unanimous Board of Directors approval. Charter is published at [ailedger.dev/charter](https://ailedger.dev/charter).
 
 Refusing customers and features is the product working as designed, not a missed-revenue problem.
 

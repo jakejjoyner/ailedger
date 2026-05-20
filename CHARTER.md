@@ -1,4 +1,4 @@
-# AILedger Charter — v1.1
+# AILedger Charter — v1.2
 
 ## Purpose
 
@@ -51,3 +51,14 @@ This charter is published from day one. Customers, regulators, and the public ca
 ## Review cadence
 
 At a minimum, reviewed annually by Board of Directors.
+
+## Regulatory context
+
+Updated 2026-05-20, post-Digital Omnibus. The binding obligations on August 2, 2026 are Article 27 FRIA (deployers in credit scoring, insurance pricing, public services, education, and employment), Article 50 transparency, financial-sector high-risk AI, and GPAI provider obligations. Most other Annex III standalone high-risk obligations move to December 2, 2027, and Annex I product-embedded systems to August 2, 2028. This narrows the immediate regulatory surface but does not change AILedger's principle: catch actual harm, not paperwork. The FRIA living-document requirement makes continuous evidence infrastructure more important, not less.
+
+This section is informational. The principles, refused-customer categories, refused-feature categories, and amendment rules above are the binding Charter commitments and are unchanged.
+
+## Change log
+
+- **v1.2 (2026-05-20):** Added Regulatory context section reflecting the May 7, 2026 Digital Omnibus political agreement. Non-substantive update; no principle changes.
+- **v1.1 (2026-05-18):** Jake-authored rewrite. Restructured into Purpose / Working as intended / Failure mode / Customers we refuse / Features we won't build / Decisions requiring board review / Exit conditions / Public commitment / Review cadence.
