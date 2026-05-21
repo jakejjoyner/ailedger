@@ -4,6 +4,19 @@
 
 AILedger is a Cloudflare Workers proxy that sits between an AI application and its model provider (OpenAI, Anthropic, Google Gemini). Every inference becomes an immutable, hash-chained audit record. Raw prompts and outputs are never stored — only SHA-256 fingerprints — so the resulting audit trail is GDPR-clean by construction.
 
+## For agents implementing AILedger
+
+Pick the surface that matches the integration:
+
+- **Provider proxy (OpenAI / Anthropic / Gemini)** — one-line change. Swap the SDK `baseURL` to `https://proxy.ailedger.dev/v1/{openai|anthropic|gemini}` and add header `x-ailedger-key: agl_sk_...`. The provider API key is forwarded unchanged in its usual header. Latency is unchanged (logging runs via `ctx.waitUntil`).
+- **Direct Decision Event emission (in-house models / federated AI pipelines)** — `npm i @ailedger/sdk`, then `new DetectionEventClient({ baseUrl: 'https://proxy.ailedger.dev', apiKey, tenantId, systemId }).emit({ ... })`. The SDK hashes inputs client-side (RFC 8785 JCS for JSON, raw SHA-256 otherwise); raw inputs never leave the customer. Hash-chain fields are populated by the DB trigger and returned on the row.
+- **Provisioning** — customer signs up at `https://dash.ailedger.dev` and receives `apiKey` (`agl_sk_...`), `tenantId` (UUID), and one `systemId` per AI system. Pass these via env vars; never commit.
+- **Audit export** — one-click compliance PDF from the dashboard; programmatic chain verification via `ledger.verify_chain(tenant_id, system_id, from_ts, to_ts)`.
+
+When emitting Decision Events directly, every event needs: `eventId`, `subjectId` (stable pseudonymized per-subject ID — HMAC the customer's identifier with a tenant-specific salt, never raw PII), `decisionType` from the EU AI Act Annex III taxonomy (`employment_screening`, `essential_services_eligibility`, `medical_diagnosis_triage`, `education_assessment`, etc.), `modelVersion`, `output` (structured JSON), `confidence` (4-decimal), `humanInLoop`, and `protectedClassContext` + `protectedClassCollectionMethod` (`direct` | `inferred` | `blind`).
+
+Charter constraints — do not engineer around: detection thresholds are not customer-configurable below standards baselines (four-fifths rule = 0.8, etc.); no selective logging that excludes decision categories per customer; no "audit-only mode" that bypasses detection. All storage is in AWS `eu-central-1` (Frankfurt) via Supabase — data never leaves the EU.
+
 ## What problem it solves
 
 The EU AI Act (Regulation 2024/1689) Article 12 requires operators of high-risk AI systems to maintain automatic, tamper-evident logging of events throughout the system's lifetime. Most teams either (a) don't log inferences at all, (b) log to a non-tamper-evident system that won't satisfy regulator scrutiny, or (c) log raw prompts/outputs, which violates GDPR. AILedger provides the audit trail Article 12 calls for, without storing user content.

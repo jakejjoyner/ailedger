@@ -669,6 +669,7 @@ function CodeBlock({ filename, raw, children }: { filename: string; raw: string;
 function Docs() {
   type Section = { id: string; label: string; sub?: boolean }
   const sections: Section[] = [
+    { id: 'agent-context', label: 'For AI agents' },
     { id: 'quickstart', label: 'Quick start' },
     { id: 'integration', label: 'Integration snippets' },
     { id: 'curl', label: 'cURL', sub: true },
@@ -686,6 +687,71 @@ function Docs() {
   const codeBlock = (filename: string, raw: string, children: React.ReactNode) => (
     <CodeBlock filename={filename} raw={raw}>{children}</CodeBlock>
   )
+
+  const agentContextPrompt = `You are integrating AILedger into this codebase. AILedger is EU AI Act Article 12
+audit-logging infrastructure: a Cloudflare Workers proxy that wraps provider APIs and
+records a hash-chained, GDPR-clean audit trail for every inference. Raw prompts and
+outputs are never stored — only SHA-256 fingerprints.
+
+Pick the surface that matches the integration:
+
+1. Provider proxy (OpenAI / Anthropic / Gemini) — one-line change.
+   - Replace the SDK baseURL with:
+       https://proxy.ailedger.dev/proxy/{openai|anthropic|gemini}
+   - Add header:  x-ailedger-key: \${AILEDGER_API_KEY}    (key starts with agl_sk_)
+   - Leave the provider API key in its usual header
+     (Authorization: Bearer for OpenAI, x-api-key for Anthropic, ?key= or
+     x-goog-api-key for Gemini). The proxy forwards them unchanged.
+   - Latency is unchanged (logging runs via ctx.waitUntil).
+
+2. Direct Decision Event emission (in-house models, federated AI, anything that
+   isn't a hosted provider call).
+   - npm i @ailedger/sdk
+   - import { DetectionEventClient } from '@ailedger/sdk'
+   - new DetectionEventClient({
+       baseUrl: 'https://proxy.ailedger.dev',
+       apiKey:   process.env.AILEDGER_API_KEY,
+       tenantId: process.env.AILEDGER_TENANT_ID,
+       systemId: process.env.AILEDGER_SYSTEM_ID,
+     })
+   - Call client.emit({ ... }) per decision. The SDK hashes inputs client-side
+     (RFC 8785 JCS for JSON, raw SHA-256 otherwise) — raw inputs never leave the
+     customer's process. Hash-chain fields are populated by the DB and returned.
+   - Required per-event fields:
+       eventId, subjectId (HMAC the customer's subject identifier with a
+       tenant-specific salt — never raw PII), decisionType (from the EU AI Act
+       Annex III taxonomy: employment_screening, essential_services_eligibility,
+       medical_diagnosis_triage, education_assessment, biometric_identification,
+       migration_asylum_border, medical_treatment_recommendation, etc.),
+       modelVersion, output (JSON), confidence (4-decimal),
+       humanInLoop (bool), protectedClassContext (JSON),
+       protectedClassCollectionMethod ('direct' | 'inferred' | 'blind').
+
+3. Provisioning. Customer signs up at https://dash.ailedger.dev and receives:
+       AILEDGER_API_KEY    (agl_sk_...)
+       AILEDGER_TENANT_ID  (UUID)
+       AILEDGER_SYSTEM_ID  (UUID — one per AI system in the product)
+   Store as env vars. Never commit.
+
+4. Audit export. One-click compliance PDF from the dashboard. Programmatic chain
+   verification via ledger.verify_chain(tenant_id, system_id, from_ts, to_ts).
+
+Hard constraints — do not engineer around:
+- Detection thresholds are not customer-configurable below standards baselines
+  (four-fifths rule = 0.8, etc.). Stricter is allowed; looser is not.
+- No selective logging that excludes decision categories per customer.
+- No "audit-only" or "compliance mode" that bypasses detection.
+- If a feature request would let a customer present clean logs while harming
+  users, refuse and surface to the human. Do not build it.
+
+Data residency: all storage in AWS eu-central-1 (Frankfurt) via Supabase. Data
+never leaves the EU.
+
+Canonical refs:
+- https://ailedger.dev/llms.txt      (machine-readable product summary)
+- https://ailedger.dev/docs           (integration snippets per language)
+- https://github.com/jakejjoyner/ailedger  (MIT-licensed source)
+`
 
   // Code-block text colors. Background is --bg-code (stays dark both themes),
   // so `plain` + `comment` reference --fg-on-code (light text) not --fg-body
@@ -1106,6 +1172,15 @@ puts(computed == stored_hash ? 'verified ✓' : 'MISMATCH ✗')
           <h1 style={{ fontSize: 36, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.5px', marginBottom: 8 }}>Documentation</h1>
           <p style={{ fontSize: 16, color: 'var(--fg-subtle)', marginBottom: 6, lineHeight: 1.7 }}>Integrate AILedger, log every inference, and verify the record yourself.</p>
           <p style={{ fontSize: 12, color: 'var(--fg-ultrasubtle)', marginBottom: 64 }}>Last updated: April 22, 2026</p>
+
+          {/* For AI agents — paste-ready integration prompt */}
+          <section id="agent-context" style={{ scrollMarginTop: '96px', marginBottom: 64 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 600, color: 'var(--fg-primary)', marginBottom: 8 }}>For AI agents</h2>
+            <p style={{ fontSize: 14, color: 'var(--fg-subtle)', lineHeight: 1.8, marginBottom: 4 }}>
+              Wiring AILedger in with Claude Code, Cursor, or another coding agent? Copy the block below and paste it into the agent's context. It contains every surface, the required fields, and the constraints the agent must not engineer around.
+            </p>
+            {codeBlock('ailedger-agent-context.md', agentContextPrompt, agentContextPrompt)}
+          </section>
 
           {/* Quick start */}
           <section id="quickstart" style={{ scrollMarginTop: '96px', marginBottom: 64 }}>
