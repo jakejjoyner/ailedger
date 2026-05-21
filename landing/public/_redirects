@@ -5,7 +5,6 @@
 /sitemap.xml   /sitemap.xml   200
 
 # Charter (static, versioned)
-/charter       /charter.html  200
 /charter/v1    /charter.html  200
 
 # SPA catch-all (must be last)
