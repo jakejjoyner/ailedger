@@ -21,6 +21,7 @@ const PROXY_URL = 'https://proxy.ailedger.dev'
 const CANONICAL_BASE = 'https://ailedger.dev'
 const CANONICAL_PATHS: Record<string, string> = {
   '/': '/',
+  '/about': '/about',
   '/docs': '/docs',
   '/guide/annex-iii': '/guide/annex-iii',
   '/contact': '/contact',
@@ -62,6 +63,7 @@ function App() {
   if (path === '/guide/annex-iii') return <AnnexIIIGuide />
   if (path === '/docs') return <Docs />
   if (path === '/pricing') return <PricingPage />
+  if (path === '/about') return <About />
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)", color: "var(--fg-body)", fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <Nav />
@@ -207,6 +209,7 @@ function Hero() {
           fontSize: 'clamp(44px, 6.5vw, 76px)', fontWeight: 700, color: 'var(--fg-primary)',
           letterSpacing: '-2px', lineHeight: 1.05, marginBottom: 28,
         }}>
+          <span className="sr-only">AILedger — </span>
           <span className={`hero-title-line fade-in fade-2a ${anim}`} style={{ display: 'block' }}>Audit-grade evidence for</span>
           <span className={`hero-title-accent fade-in fade-2b ${anim}`} style={{ display: 'block' }}><span style={{ display: 'inline-block', position: 'relative', top: '-0.055em', fontSize: '1.05em', paddingBottom: '0.12em', background: 'linear-gradient(135deg, var(--gradient-1) 0%, var(--gradient-2) 50%, var(--gradient-3) 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>every</span> AI call your product makes.</span>
         </h1>
@@ -1701,6 +1704,68 @@ function Contact() {
           For enterprise inquiries or EU data residency questions, use the same address and we'll route you to the correct person.
         </p>
       </div>
+    </div>
+  )
+}
+
+function About() {
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg-page)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <Nav />
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '100px 32px 80px' }}>
+        <a href="/" style={{ color: 'var(--fg-ultrasubtle)', fontSize: 14, textDecoration: 'none', display: 'inline-block', marginBottom: 48 }}>← Back</a>
+        <h1 style={{ fontSize: 40, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.5px', lineHeight: 1.15, marginBottom: 24 }}>
+          About AILedger
+        </h1>
+        <p style={{ color: 'var(--fg-body)', fontSize: 17, lineHeight: 1.75, marginBottom: 20 }}>
+          AILedger is audit logging infrastructure for AI systems operating under the EU AI Act. Every inference becomes a hash-chained, SHA-256-fingerprinted record an auditor can verify. No raw prompts or outputs are stored; only metadata and one-way fingerprints.
+        </p>
+        <p style={{ color: 'var(--fg-body)', fontSize: 17, lineHeight: 1.75, marginBottom: 40 }}>
+          AILedger is a product of <strong>Joyner Ventures LLC</strong>, founded by <strong>Jake Joyner</strong> in 2026, based in Venice, California. The company's mission is to make AI decisions in high-risk industries substantively auditable — catching bias, drift, and disparate impact in production before harm compounds, not after a regulator or lawsuit forces the conversation.
+        </p>
+
+        <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.3px', marginBottom: 16 }}>
+          What we build
+        </h2>
+        <p style={{ color: 'var(--fg-body)', fontSize: 16, lineHeight: 1.75, marginBottom: 32 }}>
+          Three layers: an integrity chain that anchors every record cryptographically; a decision-event schema aligned to EU AI Act Articles 12, 19, and 26 and to ISO/IEC 42001; and a detection layer — published open source under Apache 2.0 — that flags disparate impact, model drift, and other harms standards-aligned regulators care about. The product is designed to make compliance theater hard: clean logs that hide harm are not something AILedger can be configured to produce.
+        </p>
+
+        <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.3px', marginBottom: 16 }}>
+          Where we are
+        </h2>
+        <p style={{ color: 'var(--fg-body)', fontSize: 16, lineHeight: 1.75, marginBottom: 32 }}>
+          Joyner Ventures LLC — Venice, California, United States. AILedger's audit-record data resides in AWS eu-central-1 (Frankfurt, Germany), via Supabase. Nothing leaves the EU. SOC 2 Type I is targeted for Q3 2026; Type II for Q3 2027.
+        </p>
+
+        <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.3px', marginBottom: 16 }}>
+          Disambiguation
+        </h2>
+        <div style={{ padding: '24px 28px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--surface-tint)', marginBottom: 32 }}>
+          <p style={{ color: 'var(--fg-body)', fontSize: 15, lineHeight: 1.75, marginBottom: 12 }}>
+            AILedger (this site, <strong>ailedger.dev</strong>) is the EU-AI-Act audit-logging product by Joyner Ventures LLC. We are <strong>not affiliated</strong> with the following similarly-named entities:
+          </p>
+          <ul style={{ color: 'var(--fg-muted)', fontSize: 14, lineHeight: 1.9, paddingLeft: 20, margin: 0 }}>
+            <li><code>theailedger.com</code> — an AI news and analysis publication operated by AnalyticsWeek LLC. Not affiliated with AILedger or Joyner Ventures LLC.</li>
+            <li><code>ailedger.cloud</code> — an unrelated accounting-software domain. Not affiliated with AILedger or Joyner Ventures LLC.</li>
+            <li><code>ailedger.in</code> — an unrelated accounting-software domain. Not affiliated with AILedger or Joyner Ventures LLC.</li>
+          </ul>
+        </div>
+        <p style={{ color: 'var(--fg-subtle)', fontSize: 14, lineHeight: 1.75, marginBottom: 48 }}>
+          AILedger's canonical domain is <a href="https://ailedger.dev" style={{ color: 'var(--accent-text)', textDecoration: 'none' }}>ailedger.dev</a>. The product dashboard is at <a href="https://dash.ailedger.dev" style={{ color: 'var(--accent-text)', textDecoration: 'none' }}>dash.ailedger.dev</a>; the proxy at <a href="https://proxy.ailedger.dev" style={{ color: 'var(--accent-text)', textDecoration: 'none' }}>proxy.ailedger.dev</a>. The Charter is published at <a href="/charter/v1" style={{ color: 'var(--accent-text)', textDecoration: 'none' }}>ailedger.dev/charter/v1</a>. The open-source Detection layer is available on <a href="https://github.com/jakejjoyner" style={{ color: 'var(--accent-text)', textDecoration: 'none' }}>GitHub</a> under the Apache 2.0 license.
+        </p>
+
+        <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--fg-primary)', letterSpacing: '-0.3px', marginBottom: 16 }}>
+          Contact
+        </h2>
+        <p style={{ color: 'var(--fg-body)', fontSize: 16, lineHeight: 1.75, marginBottom: 8 }}>
+          <a href="mailto:support@ailedger.dev" style={{ color: 'var(--accent-text)', textDecoration: 'none', fontWeight: 500 }}>support@ailedger.dev</a> — support, billing, GDPR data rights.
+        </p>
+        <p style={{ color: 'var(--fg-subtle)', fontSize: 14, lineHeight: 1.75 }}>
+          For media or enterprise inquiries, use the same address and we'll route you to the correct person.
+        </p>
+      </div>
+      <Footer />
     </div>
   )
 }
