@@ -666,6 +666,24 @@ function CodeBlock({ filename, raw, children }: { filename: string; raw: string;
   )
 }
 
+function AgentContextCard({ payload }: { payload: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <div style={{ borderRadius: 12, border: '1px solid var(--border-strong)', background: 'var(--bg-code)', overflow: 'hidden', marginTop: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px' }}>
+        {['#ef4444','#f59e0b','#22c55e'].map((col) => (
+          <div key={col} style={{ width: 10, height: 10, borderRadius: '50%', background: col, opacity: 0.5 }} />
+        ))}
+        <span style={{ fontSize: 12, color: 'var(--fg-ultrasubtle)', marginLeft: 6, fontFamily: 'monospace', flex: 1 }}>ailedger-agent-context.md</span>
+        <button
+          onClick={() => { navigator.clipboard.writeText(payload); setCopied(true); setTimeout(() => setCopied(false), 1800) }}
+          style={{ cursor: 'pointer', background: 'var(--border)', border: '1px solid var(--border-strong)', borderRadius: 6, padding: '4px 12px', fontSize: 12, color: copied ? '#86efac' : 'var(--fg-subtle)', transition: 'color 0.15s' }}
+        >{copied ? '✓ copied' : '📋 copy'}</button>
+      </div>
+    </div>
+  )
+}
+
 function Docs() {
   type Section = { id: string; label: string; sub?: boolean }
   const sections: Section[] = [
@@ -1173,13 +1191,13 @@ puts(computed == stored_hash ? 'verified ✓' : 'MISMATCH ✗')
           <p style={{ fontSize: 16, color: 'var(--fg-subtle)', marginBottom: 6, lineHeight: 1.7 }}>Integrate AILedger, log every inference, and verify the record yourself.</p>
           <p style={{ fontSize: 12, color: 'var(--fg-ultrasubtle)', marginBottom: 64 }}>Last updated: April 22, 2026</p>
 
-          {/* For AI agents — paste-ready integration prompt */}
+          {/* For AI agents — copy-only card; prompt body intentionally not rendered */}
           <section id="agent-context" style={{ scrollMarginTop: '96px', marginBottom: 64 }}>
             <h2 style={{ fontSize: 22, fontWeight: 600, color: 'var(--fg-primary)', marginBottom: 8 }}>For AI agents</h2>
             <p style={{ fontSize: 14, color: 'var(--fg-subtle)', lineHeight: 1.8, marginBottom: 4 }}>
-              Wiring AILedger in with Claude Code, Cursor, or another coding agent? Copy the block below and paste it into the agent's context. It contains every surface, the required fields, and the constraints the agent must not engineer around.
+              Wiring AILedger in with Claude Code, Cursor, or another coding agent? Copy the bundle and paste it into the agent's context — every surface, required field, and constraint in one block.
             </p>
-            {codeBlock('ailedger-agent-context.md', agentContextPrompt, agentContextPrompt)}
+            <AgentContextCard payload={agentContextPrompt} />
           </section>
 
           {/* Quick start */}
