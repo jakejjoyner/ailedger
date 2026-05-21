@@ -260,6 +260,14 @@ export default function LogTable({ customerId, onUpgrade }: { customerId: string
   const atLimit = limit !== null && monthlyCount >= limit
   const nearLimit = limit !== null && monthlyCount >= limit * 0.85
 
+  // Hide the System column entirely when no visible log row has a system
+  // assigned. Tenants that never call POST /v1/systems (e.g. the
+  // vernier-internal sidecar) shouldn't see a column full of blanks.
+  // Re-evaluated each render so the column reappears as soon as a
+  // system-tagged row arrives.
+  const showSystemColumn = logs.some((l) => l.system_id !== null)
+  const colSpan = showSystemColumn ? 9 : 8
+
   return (
     <div>
       {/* Floating "N new logs ↑" pill, visible only while scrolled past the
@@ -350,7 +358,7 @@ export default function LogTable({ customerId, onUpgrade }: { customerId: string
               <tr className="border-b border-slate-800 bg-[#1a1d27]">
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">#</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Time</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">System</th>
+                {showSystemColumn && <th className="text-left px-4 py-3 text-slate-400 font-medium">System</th>}
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Provider</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Model</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Status</th>
@@ -362,13 +370,13 @@ export default function LogTable({ customerId, onUpgrade }: { customerId: string
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-slate-500">
+                  <td colSpan={colSpan} className="px-4 py-12 text-center text-slate-500">
                     Loading...
                   </td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-slate-500">
+                  <td colSpan={colSpan} className="px-4 py-12 text-center text-slate-500">
                     No logs yet. Point your AI calls through the proxy to start recording.
                   </td>
                 </tr>
@@ -387,15 +395,17 @@ export default function LogTable({ customerId, onUpgrade }: { customerId: string
                           {position !== null ? `#${position}` : '–'}
                         </td>
                         <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{formatDate(log.logged_at)}</td>
-                        <td className="px-4 py-3 text-sm">
-                          {log.system_id ? (
-                            <span className="text-slate-300">
-                              {systems.find((s) => s.id === log.system_id)?.system_name ?? '-'}
-                            </span>
-                          ) : (
-                            <span className="text-slate-500 italic">(no system)</span>
-                          )}
-                        </td>
+                        {showSystemColumn && (
+                          <td className="px-4 py-3 text-sm">
+                            {log.system_id ? (
+                              <span className="text-slate-300">
+                                {systems.find((s) => s.id === log.system_id)?.system_name ?? '-'}
+                              </span>
+                            ) : (
+                              <span className="text-slate-600">—</span>
+                            )}
+                          </td>
+                        )}
                         <td className="px-4 py-3 text-white capitalize">{log.provider}</td>
                         <td className="px-4 py-3 text-slate-300">{log.model_name ?? '-'}</td>
                         <td className={`px-4 py-3 font-mono font-medium ${statusColor(log.status_code)}`}>{log.status_code}</td>
@@ -406,7 +416,7 @@ export default function LogTable({ customerId, onUpgrade }: { customerId: string
                     )
                   })}
                   <tr ref={sentinelRef} aria-hidden="true">
-                    <td colSpan={9} className="px-4 py-3 text-center text-xs text-slate-500">
+                    <td colSpan={colSpan} className="px-4 py-3 text-center text-xs text-slate-500">
                       {loadingMore
                         ? 'Loading more...'
                         : hasMore

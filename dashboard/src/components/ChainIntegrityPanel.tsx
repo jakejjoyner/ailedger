@@ -84,21 +84,35 @@ export default function ChainIntegrityPanel({ customerId, lastInsertAt, onHeadUp
   // per Jake — users click "Verify" when they want a fresh integrity check.
   //
   // Hydrate the LAST verification result from localStorage so Verified-OK /
-  // Verified-broken state survives a page refresh. If the chain has grown
-  // since the last verify (current row_count > stored row_count), we
-  // restore the result but mark it stale; the user has to re-click to
-  // confirm against current state.
+  // Verified-broken state survives a page refresh. If the chain head hash
+  // has moved since the last verify, we restore the result but mark it
+  // stale; the user has to re-click to confirm against current state.
+  // (Hash comparison instead of row_count comparison: verify_chain's
+  // row_count means "post-disclosure rows walked" while chain_head's
+  // row_count means "total chained rows" — comparing them was a bug that
+  // marked vernier-internal stale-on-load every time.)
   useEffect(() => {
     let cancelled = false
 
     // Hydrate first so we have something to compare against the head.
-    let hydrated: { verifyResult: VerifyChain; verifiedAt: string; rowCountAtVerify: number } | null = null
+    let hydrated: { verifyResult: VerifyChain; verifiedAt: string; chainHeadHashAtVerify: string | null } | null = null
     try {
       const raw = localStorage.getItem(lsKey)
       if (raw) {
         const parsed = JSON.parse(raw)
-        if (parsed && parsed.verifyResult && parsed.verifiedAt && typeof parsed.rowCountAtVerify === 'number') {
-          hydrated = parsed
+        // Accept legacy persisted entries (`rowCountAtVerify`) and current
+        // ones (`chainHeadHashAtVerify`). Legacy entries get re-saved on the
+        // next verify, so this fallback path eventually clears itself.
+        const headHashAtVerify =
+          typeof parsed?.chainHeadHashAtVerify === 'string'
+            ? parsed.chainHeadHashAtVerify
+            : parsed?.verifyResult?.chain_head_hash ?? null
+        if (parsed && parsed.verifyResult && parsed.verifiedAt) {
+          hydrated = {
+            verifyResult: parsed.verifyResult,
+            verifiedAt: parsed.verifiedAt,
+            chainHeadHashAtVerify: headHashAtVerify,
+          }
           setVerifyResult(parsed.verifyResult)
           setVerifiedAt(parsed.verifiedAt)
           setStatus(parsed.verifyResult.ok ? 'verified-ok' : 'verified-broken')
@@ -152,15 +166,17 @@ export default function ChainIntegrityPanel({ customerId, lastInsertAt, onHeadUp
         }
       }
 
-      // Only auto-stale a previously verified-OK chain after rows have
-      // been added. A previously verified-BROKEN chain must NEVER be
-      // downgraded to "stale" on reload — a break is a load-bearing
-      // finding that has to stay visible until the user explicitly
-      // re-verifies. Anti-pattern caught by Jake 2026-05-08.
+      // Only auto-stale a previously verified-OK chain when the chain head
+      // hash has moved since verify. A previously verified-BROKEN chain
+      // must NEVER be downgraded to "stale" on reload — a break is a
+      // load-bearing finding that has to stay visible until the user
+      // explicitly re-verifies. Anti-pattern caught by Jake 2026-05-08.
       if (
         hydrated &&
         hydrated.verifyResult.ok &&
-        headData.row_count > hydrated.rowCountAtVerify
+        hydrated.chainHeadHashAtVerify !== null &&
+        headData.chain_head_hash !== null &&
+        headData.chain_head_hash !== hydrated.chainHeadHashAtVerify
       ) {
         setStatus('stale')
       }
@@ -169,10 +185,15 @@ export default function ChainIntegrityPanel({ customerId, lastInsertAt, onHeadUp
     return () => { cancelled = true }
   }, [customerId, onHeadUpdate, lsKey])
 
-  // When a new row is inserted, refresh the head and mark existing
-  // verification stale. Debounced 3s so a high-frequency insert burst
-  // (e.g., the sidecar daemon shipping a backlog) doesn't fire one
-  // chain_head fetch per row — it fires once after writes settle.
+  // When a new row is inserted, refresh the head (Records-chained KPI +
+  // chain_head_hash). We do NOT auto-flip a verified-ok chain to stale:
+  // the AFTER INSERT verification trigger (20260519_chain_insert_verification_trigger)
+  // re-walks chain_prev_hash against the actual predecessor on every
+  // insert and RAISEs on tamper, so a verified-ok chain extended by
+  // clean inserts is still meaningfully verified. The server-side
+  // chain_health monitor (cron) is the authoritative break signal — its
+  // result is surfaced on initial load above. Debounced 3s so an insert
+  // burst doesn't fire one chain_head fetch per row.
   useEffect(() => {
     if (!lastInsertAt) return
     let cancelled = false
@@ -183,7 +204,6 @@ export default function ChainIntegrityPanel({ customerId, lastInsertAt, onHeadUp
       const headData = data as ChainHead
       setHead(headData)
       if (onHeadUpdate) onHeadUpdate(headData)
-      setStatus((prev) => (prev === 'verified-ok' || prev === 'verified-broken' ? 'stale' : prev))
     }, 3000)
     return () => { cancelled = true; clearTimeout(t) }
   }, [lastInsertAt, customerId, onHeadUpdate])
@@ -202,15 +222,18 @@ export default function ChainIntegrityPanel({ customerId, lastInsertAt, onHeadUp
     }
     const result = data as VerifyChain
     const verifiedAtNow = new Date().toISOString()
-    const rowCountAtVerify = result.row_count
     setVerifyResult(result)
     setVerifiedAt(verifiedAtNow)
     setStatus(result.ok ? 'verified-ok' : 'verified-broken')
-    if (result.chain_head_hash) {
+    // Don't overwrite head.row_count with verify's row_count — they have
+    // different semantics now (verify counts post-disclosure walked rows,
+    // chain_head counts total chained rows; the UI's "Records chained"
+    // KPI wants the latter). Only refresh chain_head_hash if verify
+    // produced one.
+    if (result.chain_head_hash && head) {
       const updated: ChainHead = {
+        ...head,
         chain_head_hash: result.chain_head_hash,
-        last_id: head?.last_id ?? null,
-        row_count: result.row_count,
       }
       setHead(updated)
       if (onHeadUpdate) onHeadUpdate(updated)
@@ -222,7 +245,7 @@ export default function ChainIntegrityPanel({ customerId, lastInsertAt, onHeadUp
         JSON.stringify({
           verifyResult: result,
           verifiedAt: verifiedAtNow,
-          rowCountAtVerify,
+          chainHeadHashAtVerify: result.chain_head_hash,
         }),
       )
     } catch {
@@ -308,7 +331,7 @@ export default function ChainIntegrityPanel({ customerId, lastInsertAt, onHeadUp
             <div className="mt-3 rounded-lg border border-red-900/50 bg-red-950/30 p-3">
               <div className="text-sm font-semibold text-red-400 mb-2">✗ Chain break detected</div>
               <div className="text-xs text-slate-300 space-y-1">
-                <div>Broken at row id <span className="font-mono text-red-300">{verifyResult.broken_at_id}</span> (record #{verifyResult.row_count})</div>
+                <div>Broken at row id <span className="font-mono text-red-300">{verifyResult.broken_at_id}</span></div>
                 <div>
                   <span className="text-slate-500">Expected:</span>{' '}
                   <span className="font-mono text-slate-300">{shortHash(verifyResult.expected_hash, 12)}</span>

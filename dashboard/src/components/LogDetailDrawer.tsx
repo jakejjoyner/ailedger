@@ -90,7 +90,7 @@ export default function LogDetailDrawer({
           </Section>
 
           <Section label="Request">
-            <Field label="System" value={log.system_id ? (systemName ?? '-') : '(no system)'} />
+            {log.system_id && <Field label="System" value={systemName ?? '-'} />}
             <Field label="Provider" value={log.provider} />
             <Field label="Model" value={log.model_name ?? '-'} />
             <Field label="Method" value={log.method ?? '-'} />
