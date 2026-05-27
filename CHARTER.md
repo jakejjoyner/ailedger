@@ -1,8 +1,18 @@
-# AILedger Charter — v1.2
+# AILedger Charter — v1.3
 
 ## Purpose
 
 AILedger exists to make AI systems in regulated industries auditable in ways that catch actual harm to real people. Not to generate paperwork that satisfies regulators while harm continues.
+
+## Scope: what AILedger does and does not do
+
+AILedger sits at the audit layer of AI-influenced decisions, not the decision layer or the remediation layer:
+
+- **Detection (yes):** Identify bias, drift, disparate impact, and other failure modes in AI-influenced decisions, with thresholds anchored to published standards (EEOC 29 CFR 1607, FDIC SR 11-7, OCC 2011-12).
+- **Reporting (yes):** Produce structured Decision Event records, Integrity Chain verifications, and statistical findings as audit-grade evidence usable by customers, regulators, and adversarial reviewers.
+- **Remediation (no, by design):** AILedger does not propose, recommend, or implement remediation for the AI behavior it detects. Remediation is the customer's responsibility, executed by their compliance, legal, and regulatory counsel. This separation is structural: an audit substrate that also remediated would mean customers grading their own work, which is exactly the audit theater this Charter exists to prevent.
+
+AILedger facilitates accountability. It does not absolve it.
 
 ## Working as intended
 
@@ -60,5 +70,6 @@ This section is informational. The principles, refused-customer categories, refu
 
 ## Change log
 
+- **v1.3 (2026-05-26):** Added Scope section delineating AILedger's role — detection and reporting at the audit layer, with remediation excluded by design. Clarifies existing principles rather than altering them; no refused-customer, refused-feature, or amendment rules changed. The detect-report-remediate continuum framing originated from a question posed by an advisor.
 - **v1.2 (2026-05-20):** Added Regulatory context section reflecting the May 7, 2026 Digital Omnibus political agreement. Non-substantive update; no principle changes.
 - **v1.1 (2026-05-18):** Jake-authored rewrite. Restructured into Purpose / Working as intended / Failure mode / Customers we refuse / Features we won't build / Decisions requiring board review / Exit conditions / Public commitment / Review cadence.
