@@ -8,9 +8,9 @@ AILedger exists to make AI systems in regulated industries auditable in ways tha
 
 AILedger sits at the audit layer of AI-influenced decisions, not the decision layer or the remediation layer:
 
-- **Detection (yes):** Identify bias, drift, disparate impact, and other failure modes in AI-influenced decisions, with thresholds anchored to published standards (EEOC 29 CFR 1607, FDIC SR 11-7, OCC 2011-12).
+- **Detection (yes):** Identify bias, drift, disparate impact, and other failure modes in AI-influenced decisions, with thresholds anchored to the published standards maintained in [STANDARDS.md](./STANDARDS.md) — the EEOC four-fifths rule (29 CFR 1607), NIST AI RMF 1.0, ISO/IEC 42001, and EU AI Act Articles 12, 19, and 26.
 - **Reporting (yes):** Produce structured Decision Event records, Integrity Chain verifications, and statistical findings as audit-grade evidence usable by customers, regulators, and adversarial reviewers.
-- **Remediation (no, by design):** AILedger does not propose, recommend, or implement remediation for the AI behavior it detects. Remediation is the customer's responsibility, executed by their compliance, legal, and regulatory counsel. This separation is structural: an audit substrate that also remediated would mean customers grading their own work, which is exactly the audit theater this Charter exists to prevent.
+- **Remediation (no, by design):** AILedger does not — and will not build features to — propose, recommend, or implement remediation for the AI behavior it detects. Remediation is the customer's responsibility, executed by their compliance, legal, and regulatory counsel. This separation is structural: an audit substrate that also remediated would mean customers grading their own work, which is exactly the audit theater this Charter exists to prevent.
 
 AILedger facilitates accountability. It does not absolve it.
 
@@ -70,6 +70,6 @@ This section is informational. The principles, refused-customer categories, refu
 
 ## Change log
 
-- **v1.3 (2026-05-26):** Added Scope section delineating AILedger's role — detection and reporting at the audit layer, with remediation excluded by design. Clarifies existing principles rather than altering them; no refused-customer, refused-feature, or amendment rules changed. The detect-report-remediate continuum framing originated from a question posed by an advisor.
+- **v1.3 (2026-05-27):** Substantive amendment. Added a Scope section establishing a binding boundary on what AILedger builds: it operates at the audit layer — detection and reporting — and will not propose, recommend, or implement remediation for the behavior it detects. This is a new structural commitment that constrains future product direction, in the same class as the refused-customer and refused-feature categories — not a clarification of existing text. Detection-standard citations reconciled to the maintained list in [STANDARDS.md](./STANDARDS.md). The detect-report-remediate continuum framing originated from a question posed by an advisor.
 - **v1.2 (2026-05-20):** Added Regulatory context section reflecting the May 7, 2026 Digital Omnibus political agreement. Non-substantive update; no principle changes.
 - **v1.1 (2026-05-18):** Jake-authored rewrite. Restructured into Purpose / Working as intended / Failure mode / Customers we refuse / Features we won't build / Decisions requiring board review / Exit conditions / Public commitment / Review cadence.
